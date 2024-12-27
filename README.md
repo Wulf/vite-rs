@@ -615,3 +615,9 @@ In other words, we believe ViteJS is a good bet for your bundling needs for the 
 # Acknowledgements
 
 Many thanks to @pyrossh and the greater Rust community for the [rust-embed](https://github.com/pyrossh/rust-embed/commit/a735c9e979e6425f1553c436fe15608f98fa1780) crate which was used as a reference.
+
+# License
+
+This crate is distributed under the terms of both the MIT license and the Apache License (Version 2.0).
+
+See LICENSE-APACHE, LICENSE-MIT, and COPYRIGHT for details.

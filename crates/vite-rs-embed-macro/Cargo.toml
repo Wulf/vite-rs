@@ -2,6 +2,13 @@
 name = "vite-rs-embed-macro"
 version = "0.1.0"
 edition = "2021"
+description = "Uses ViteJS to compile frontend assets and embeds the results into your Rust binary. (Serves from the ViteJS dev server in development.)"
+license = "MIT OR Apache-2.0"
+authors = ["Haris <4259838+Wulf@users.noreply.github.com>"]
+keywords = ["vite", "vitejs", "bundler", "swc", "esbuild"]
+categories = [
+    "web-programming",
+]
 
 [lib]
 proc-macro = true
