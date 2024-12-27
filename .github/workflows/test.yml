@@ -1,0 +1,48 @@
+name: Test
+on: [push, pull_request]
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions/checkout@master
+      - run: rustup component add rustfmt
+      - run: cargo fmt --all -- --check
+  test:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS-latest] # todo: add 'windows-latest'
+        rust: [stable]
+        experimental: [false]
+        # Note: We're no longer reliant on nightly, so we can remove this.
+        #       Keeping it here for future reference.
+        #
+        # # include:
+        # #   # Test on stable -- we expect this to fail, but we want to know when it starts working!
+        # #   - rust: stable
+        # #     os: ubuntu-latest
+        # #     experimental: true
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+      - uses: actions/checkout@master
+      - name: Install npm packages for examples & tests
+        run: |
+          (cd ./crates/vite-rs/test_projects && npm ci)
+          (cd ./crates/vite-rs/examples/vite-project-folder && npm ci)
+      - name: Run tests # note: this step also compiles examples, but does not run them.
+        run: |
+          cargo test
+          cargo test --release
+      - name: Run examples
+        run: |
+          cargo run --example basic_usage
+          cargo run --example basic_usage --release
+          cargo run --example custom_ctrl_c_handler
+          cargo run --example custom_ctrl_c_handler --release

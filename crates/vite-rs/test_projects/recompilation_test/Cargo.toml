@@ -1,0 +1,10 @@
+[package]
+name = "recompilation_test"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+vite-rs = { path = "../../" }
+
+[workspace]

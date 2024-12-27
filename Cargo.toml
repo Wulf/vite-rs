@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+package.readme = "README.md"
+members = [
+    "crates/vite-rs",
+    "crates/vite-rs-dev-server",
+    "crates/vite-rs-embed-macro", 
+]

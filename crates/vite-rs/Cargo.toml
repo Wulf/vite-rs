@@ -1,0 +1,29 @@
+[package]
+name = "vite-rs"
+version = "0.1.0"
+edition = "2021"
+readme.workspace = true
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"
+
+[[example]]
+name = "custom_ctrl_c_handler"
+path = "examples/custom_ctrl_c_handler.rs"
+default-features = false
+
+[dev-dependencies]
+nix = { version = "0.29.0", features = ["signal"] } # for tests
+reqwest = { version = "0.12.7" }                    # for tests
+command-group = { version = "5.0.1" }               # for tests
+ctrlc = { version = "3.4.4" }                       # for examples and tests
+
+[dependencies]
+vite-rs-embed-macro = { path = "../vite-rs-embed-macro" }
+vite-rs-dev-server = { path = "../vite-rs-dev-server" }
+
+[features]
+default = ["ctrlc"]
+ctrlc = ["vite-rs-dev-server/ctrlc", "vite-rs-embed-macro/ctrlc"]
+debug-prod = ["vite-rs-dev-server/debug-prod", "vite-rs-embed-macro/debug-prod"]
