@@ -37,6 +37,7 @@ fn main() {
 ## Table of Contents
 
 - [Quick Start](#quick-start)
+- [API](#api)
 - [Options](#options)
   - [`#[root = "<path>"]`](#root--path)
   - [`#[output = "<path>"]`](#output--path)
@@ -153,6 +154,78 @@ fn main() {
    ```
 
 See the `crates/vite-rs/examples` and `crates/vite-rs/tests` folders for more examples.
+
+## API
+
+When you derive the `vite_rs::Embed` trait, some methods are generated for your struct which allow you to interact with your Vite assets. In development, the methods differ in behavior from release builds.
+
+```rust
+#[derive(vite_rs::Embed)]
+struct Assets;
+```
+
+### Release
+
+- **GET ASSET**: Get an asset by its path. Fetches assets embedded into the binary.
+
+  ```rust
+  Assets::get(path: &str) -> Option<vite_rs::ViteFile>
+  ```
+
+- **ITERATE OVER ASSETS**: Get an iterator over all assets.
+
+  ```rust
+  Assets::iter() -> impl Iterator<Item = Cow<'static, str>>
+  ```
+
+### Development
+
+- **GET ASSET**: Get an asset by its path. Fetches assets from the dev server.
+
+  ```rust
+  Assets::get(path: &str) -> Option<vite_rs::ViteFile>
+  ```
+
+- **START DEV SERVER**: Starts the ViteJS dev server. This function returns an [RAII guard](https://doc.rust-lang.org/rust-by-example/scope/raii.html) that stops the dev server when it goes out of scope.
+
+  ```rust
+  // with `ctrlc` feature enabled:
+  Assets::start_dev_server(register_ctrl_c_handler: bool) -> vite_rs::ViteProcess
+
+  // without `ctrlc` feature:
+  Assets::start_dev_server() -> vite_rs::ViteProcess
+  ```
+
+  Note: The `ctrlc` feature is enabled by default. If you pass in `true` for `register_ctrl_c_handler`, it will stop the dev server on SIGTERM/SIGINT/SIGHUP.
+
+- **STOP DEV SERVER**: Stops the ViteJS dev server.
+
+  ```rust
+  Assets::stop_dev_server()
+  ```
+
+Note: In development, you cannot iterate over all assets because there is no way to do so using the Vite dev server.
+
+### Release
+
+```rust
+#[derive(vite_rs::Embed)]
+struct Assets;
+
+fn main() {
+    // Get an asset by its path
+    let asset = Assets::get("index.html"); // -> : Option<vite_rs::ViteFile>
+
+    // Get an iterator over all assets
+    let assets = Assets::iter(); // -> impl Iterator<Item = Cow<'static, str>>
+
+    // Start the ViteJS dev server
+    let guard: vite_rs::ViteProcess = Assets::start_dev_server(true);
+
+    // Stop the ViteJS dev server
+    Assets::stop_dev_server();
+}
+```
 
 ## Options
 
