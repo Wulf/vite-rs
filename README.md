@@ -164,7 +164,7 @@ When you derive the `vite_rs::Embed` trait, some methods are generated for your 
 struct Assets;
 ```
 
-### Release
+#### In release builds:
 
 - **GET ASSET**: Get an asset by its path. Fetches assets embedded into the binary.
 
@@ -178,9 +178,9 @@ struct Assets;
   Assets::iter() -> impl Iterator<Item = Cow<'static, str>>
   ```
 
-### Development
+#### In development builds:
 
-- **GET ASSET**: Get an asset by its path. Fetches assets from the dev server.
+- **GET ASSET**: Get an asset by its path. Fetches assets from the dev server over HTTP.
 
   ```rust
   Assets::get(path: &str) -> Option<vite_rs::ViteFile>
@@ -205,27 +205,6 @@ struct Assets;
   ```
 
 Note: In development, you cannot iterate over all assets because there is no way to do so using the Vite dev server.
-
-### Release
-
-```rust
-#[derive(vite_rs::Embed)]
-struct Assets;
-
-fn main() {
-    // Get an asset by its path
-    let asset = Assets::get("index.html"); // -> : Option<vite_rs::ViteFile>
-
-    // Get an iterator over all assets
-    let assets = Assets::iter(); // -> impl Iterator<Item = Cow<'static, str>>
-
-    // Start the ViteJS dev server
-    let guard: vite_rs::ViteProcess = Assets::start_dev_server(true);
-
-    // Stop the ViteJS dev server
-    Assets::stop_dev_server();
-}
-```
 
 ## Options
 
