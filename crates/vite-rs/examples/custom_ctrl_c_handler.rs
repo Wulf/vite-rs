@@ -5,18 +5,18 @@ use vite_rs::Embed;
 struct Assets;
 
 fn main() {
-    #[cfg(debug_assertions)]
+    #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
     // We use an RAII guard to gracefully exit the dev server
     let _guard = Assets::start_dev_server(false);
 
     ctrlc::try_set_handler(|| {
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
         Assets::stop_dev_server();
         std::process::exit(0);
     })
     .unwrap();
 
-    #[cfg(debug_assertions)]
+    #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
     {
         println!("Waiting for the dev server to start (2 second)");
         std::thread::sleep(std::time::Duration::from_secs(2));
@@ -28,7 +28,7 @@ fn main() {
     println!("Reading index.html:");
     println!("{}", file_content);
 
-    #[cfg(debug_assertions)]
+    #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
     assert_eq!(
         strip_space(file_content),
         strip_space(
@@ -59,7 +59,7 @@ fn main() {
         )
     );
 
-    #[cfg(not(debug_assertions))]
+    #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
     assert_eq!(
         strip_space(file_content),
         strip_space(

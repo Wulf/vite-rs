@@ -1,8 +1,21 @@
 [workspace]
 resolver = "2"
-package.readme = "README.md"
 members = [
-    "crates/vite-rs",
+    "crates/vite-rs", 
+    "crates/vite-rs-axum-0-8",
     "crates/vite-rs-dev-server",
     "crates/vite-rs-embed-macro", 
+    "crates/vite-rs-interface",
 ]
+
+[workspace.package]
+version = "0.1.0"
+description = "Uses ViteJS to compile frontend assets and embeds the results into your Rust binary. (Serves from the ViteJS dev server in development.)"
+repository = "https://github.com/Wulf/vite-rs"
+readme = "README.md"
+authors = ["Haris <4259838+Wulf@users.noreply.github.com>"]
+keywords = ["vite", "vitejs", "bundler", "swc", "esbuild"]
+categories = ["web-programming", "development-tools", "filesystem"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+homepage = "https://github.com/Wulf/vite-rs"

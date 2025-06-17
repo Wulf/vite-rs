@@ -1,5 +1,9 @@
 name: Test
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 jobs:
   format:
     runs-on: ubuntu-latest
@@ -35,14 +39,27 @@ jobs:
       - name: Install npm packages for examples & tests
         run: |
           (cd ./crates/vite-rs/test_projects && npm ci)
+          (cd ./crates/vite-rs-axum-0-8/test_projects/basic_usage_test/app && npm ci)
+          (cd ./crates/vite-rs-axum-0-8/test_projects/ctrl_c_handling_test/app && npm ci)
+          (cd ./crates/vite-rs-axum-0-8/examples/basic_usage/app && npm ci)
           (cd ./crates/vite-rs/examples/vite-project-folder && npm ci)
       - name: Run tests # note: this step also compiles examples, but does not run them.
         run: |
-          cargo test
-          cargo test --release
-      - name: Run examples
+          # VITE-RS
+          cargo test -p vite-rs
+          cargo test -p vite-rs --release
+
+          # AXUM
+          cargo test -p vite-rs-axum-0-8
+          cargo test -p vite-rs-axum-0-8 --release
+      - name: Run/compile examples
         run: |
-          cargo run --example basic_usage
-          cargo run --example basic_usage --release
-          cargo run --example custom_ctrl_c_handler
-          cargo run --example custom_ctrl_c_handler --release
+          # VITE-RS
+          cargo run -p vite-rs --example basic_usage
+          cargo run -p vite-rs --example basic_usage --release
+          cargo run -p vite-rs --example custom_ctrl_c_handler
+          cargo run -p vite-rs --example custom_ctrl_c_handler --release
+
+          # AXUM
+          (cd ./crates/vite-rs-axum-0-8/examples/basic_usage && cargo build)
+          (cd ./crates/vite-rs-axum-0-8/examples/basic_usage && cargo build --release)

@@ -1,15 +1,15 @@
 [package]
 name = "vite-rs-dev-server"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+description.workspace = true
+repository.workspace = true
 readme.workspace = true
-description = "Uses ViteJS to compile frontend assets and embeds the results into your Rust binary. (Serves from the ViteJS dev server in development.)"
-license = "MIT OR Apache-2.0"
-authors = ["Haris <4259838+Wulf@users.noreply.github.com>"]
-keywords = ["vite", "vitejs", "bundler", "swc", "esbuild"]
-categories = [
-    "web-programming",
-]
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
 
 [dependencies]
 reqwest = { version = "0.12", default-features = false, features = [
