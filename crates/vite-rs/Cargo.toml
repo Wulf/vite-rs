@@ -1,15 +1,15 @@
 [package]
 name = "vite-rs"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+description.workspace = true
+repository.workspace = true
 readme.workspace = true
-description = "Uses ViteJS to compile frontend assets and embeds the results into your Rust binary. (Serves from the ViteJS dev server in development.)"
-license = "MIT OR Apache-2.0"
-authors = ["Haris <4259838+Wulf@users.noreply.github.com>"]
-keywords = ["vite", "vitejs", "bundler", "swc", "esbuild"]
-categories = [
-    "web-programming",
-]
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
 
 [[example]]
 name = "basic_usage"
@@ -18,19 +18,21 @@ path = "examples/basic_usage.rs"
 [[example]]
 name = "custom_ctrl_c_handler"
 path = "examples/custom_ctrl_c_handler.rs"
-default-features = false
 
 [dev-dependencies]
 nix = { version = "0.29.0", features = ["signal"] } # for tests
 reqwest = { version = "0.12.7" }                    # for tests
 command-group = { version = "5.0.1" }               # for tests
 ctrlc = { version = "3.4.4" }                       # for examples and tests
+sha2 = "0.10.9"                                     # for tests
 
 [dependencies]
 vite-rs-embed-macro = { path = "../vite-rs-embed-macro", version = "0.1.0" }
 vite-rs-dev-server = { path = "../vite-rs-dev-server", version = "0.1.0" }
+vite-rs-interface = { path = "../vite-rs-interface", version = "0.1.0" }
 
 [features]
-default = ["ctrlc"]
+default = ["ctrlc", "content-hash"]
 ctrlc = ["vite-rs-dev-server/ctrlc", "vite-rs-embed-macro/ctrlc"]
-debug-prod = ["vite-rs-dev-server/debug-prod", "vite-rs-embed-macro/debug-prod"]
+debug-prod = ["vite-rs-interface/debug-prod", "vite-rs-dev-server/debug-prod", "vite-rs-embed-macro/debug-prod"]
+content-hash = ["vite-rs-interface/content-hash", "vite-rs-embed-macro/content-hash"]

@@ -25,6 +25,7 @@ pub fn test() {
     ensure_ts_entrypoint();
     ensure_public_dir_files();
     ensure_no_vite_manifest();
+    ensure_content_hash_is_correct();
 }
 
 #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
@@ -134,4 +135,38 @@ fn ensure_public_dir_files() {
 
 fn ensure_no_vite_manifest() {
     assert!(Assets::get(".vite/manifest.json").is_none());
+}
+
+fn ensure_content_hash_is_correct() {
+    let public_file = Assets::get("test.txt").unwrap();
+    let input_file = Assets::get("app/index.html").unwrap();
+    #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
+    let included_file = Assets::get("app/index.ts").unwrap();
+    #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
+    let included_file = Assets::get("assets/index-BZiJcslM.js").unwrap();
+
+    check_hash(public_file);
+    check_hash(input_file);
+    check_hash(included_file);
+
+    fn check_hash(file: vite_rs::ViteFile) {
+        use sha2::{Digest, Sha256};
+        let hash = Sha256::digest(&file.bytes);
+        #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
+        {
+            assert!(file.content_hash.starts_with("W/\""));
+            assert!(file.content_hash.ends_with("\""));
+            assert!(file.content_hash.len() > 4)
+        }
+
+        #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
+        {
+            let content_hash = format!("{:x}", hash);
+
+            assert_eq!(
+                file.content_hash.to_lowercase(),
+                content_hash.to_lowercase()
+            );
+        }
+    }
 }

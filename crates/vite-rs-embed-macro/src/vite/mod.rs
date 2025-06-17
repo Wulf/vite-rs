@@ -5,9 +5,9 @@ pub mod build {
     use quote::quote;
     use std::{collections::BTreeMap, path::PathBuf};
 
-    use crate::vite::build::embed::FileEntry;
-    mod embed;
-    mod manifest;
+    mod file_entry;
+    use file_entry::FileEntry;
+    mod vite_manifest;
 
     fn list_compiled_files(absolute_output_path: &str) -> Vec<String> {
         let compiled_files = walkdir::WalkDir::new(absolute_output_path)
@@ -77,7 +77,7 @@ pub mod build {
             p.to_str().unwrap().to_string()
         };
 
-        let vite_manifest = manifest::load_vite_manifest(&absolute_vite_manifest_path);
+        let vite_manifest = vite_manifest::load_vite_manifest(&absolute_vite_manifest_path);
 
         let mut match_values = BTreeMap::new();
         let mut list_values = Vec::<String>::new();
@@ -93,14 +93,6 @@ pub mod build {
                     p.to_str().expect("Failed to convert to string").to_string()
                 };
 
-                // let entry_file_name = vite_manifest
-                //     .iter()
-                //     .filter(|(_, value)| value.isEntry.unwrap_or(false))
-                //     .find(|(_, value)| value.file.eq(relative_file_path))
-                //     .map(|(key, _)| key);
-
-                // let entry_path = entry_file_name.unwrap_or(&relative_file_path).to_string();
-
                 list_values.push(relative_file_path.clone());
                 println!(
                     "Adding entry: {} for {}",
@@ -115,7 +107,7 @@ pub mod build {
                 })
             })
             .for_each(|entry| {
-                match_values.insert(entry.match_key().clone(), entry.match_value());
+                match_values.insert(entry.match_key().clone(), entry.match_value(&crate_path));
             });
 
         // Aliases help us refer to entrypoints from their uncompiled name.
@@ -182,6 +174,20 @@ pub mod build {
                 pub fn iter() -> impl ::std::iter::Iterator<Item = ::std::borrow::Cow<'static, str>> {
                     Self::names().map(|x| ::std::borrow::Cow::from(*x))
                 }
+
+                pub fn boxed() -> ::std::boxed::Box<dyn #crate_path::GetFromVite> {
+                    ::std::boxed::Box::new(#struct_ident {})
+                }
+            }
+
+            impl #crate_path::GetFromVite for #struct_ident {
+                fn get(&self, file_path: &str) -> ::std::option::Option<#crate_path::ViteFile> {
+                    #struct_ident::get(file_path)
+                }
+
+                fn clone_box(&self) -> ::std::boxed::Box<dyn #crate_path::GetFromVite> {
+                    ::std::boxed::Box::new(#struct_ident {})
+                }
             }
         })
     }
@@ -216,6 +222,26 @@ pub mod build {
             }
         };
 
+        let etag = if cfg!(feature = "content-hash") {
+            quote! {
+                let etag = res
+                    .headers()
+                    .get(#crate_path::vite_rs_dev_server::reqwest::header::ETAG)
+                    .expect("FATAL: ViteJS dev server did not return an `ETag` header.")
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+            }
+        } else {
+            quote! {}
+        };
+
+        let content_hash = if cfg!(feature = "content-hash") {
+            quote! { content_hash: etag, }
+        } else {
+            quote! {}
+        };
+
         Ok(quote! {
             impl #struct_ident {
                 #start_dev_server
@@ -234,7 +260,6 @@ pub mod build {
                 }
 
                 pub fn get(path: &str) -> Option<#crate_path::ViteFile> {
-                    println!("Fetching: {}", path);
                     let path = path.to_string();
                     std::thread::spawn(move || {
                         let client = #crate_path::vite_rs_dev_server::reqwest::blocking::Client::new();
@@ -245,10 +270,8 @@ pub mod build {
                             path
                         );
 
-                        match client.get(url).send() {
+                        match client.get(&url).send() {
                             Ok(res) => {
-                                println!("OK! {:#?}", res);
-
                                 if res.status() == 404 {
                                     return None;
                                 }
@@ -263,34 +286,26 @@ pub mod build {
 
                                 let content_length = res
                                     .content_length()
-                                    .expect("FATAL: ViteJS dev server did not return a content length!");
+                                    .expect("FATAL: ViteJS dev server did not return a `Content-Length` header.");
+
+                                #etag
 
                                 let mut bytes = res.bytes().unwrap().to_vec();
 
-                                /*
-                                    The following comment is left here on purpose.
-                                    It no longer applies and will be removed in the future.
-
-                                        // We make some modifications to HTML files in dev so they play nicely with the ViteJS dev server
-                                        // Specifically, we update any non-absolute src attributes for <scripts/> and base them to make requests
-                                        // to the dev server.
-
-                                        if content_type == "text/html" {
-                                            let mut html = String::from_utf8_lossy(&bytes).to_string();
-                                            let mut new_html = String::new();
-
-                                            // TODO
-
-                                            new_html.push_str(&html[last_index..]);
-                                            bytes = new_html.into_bytes();
-                                        }
-                                */
+                                /// check if the path is a css file, if so, print a warning if the content type isn't text/css:
+                                if path.ends_with(".css") && !content_type.eq("text/css") {
+                                    println!(
+                                        "**WARNING**: A request for a CSS resource ({}) was served javascript. This is likely because you've referenced a CSS file in your HTML which was not in the `public` directory (configurable in the vite's config). This will still be fine in release builds, but the CSS won't be applied correctly in development. You can move the CSS file to the public directory (for example: `public/styles.css`) and reference it in your HTML with a `<link rel=\"stylesheet\" href=\"/styles.css\">` tag. Alternatively, you can import the CSS file in your JavaScript code with `import './styles.css';`.",
+                                        &url
+                                    );
+                                }
 
                                 Some(#crate_path::ViteFile {
                                     last_modified: None, /* we don't send this in dev! */
                                     content_type: content_type,
                                     content_length: content_length,
                                     bytes: bytes,
+                                    #content_hash
                                 })
                             }
                             Err(e) => {
@@ -301,6 +316,20 @@ pub mod build {
                     })
                     .join()
                     .expect("Failed to spawn thread to fetch ViteJS dev server resource.")
+                }
+
+                pub fn boxed() -> ::std::boxed::Box<dyn #crate_path::GetFromVite> {
+                    ::std::boxed::Box::new(#struct_ident {})
+                }
+            }
+
+            impl #crate_path::GetFromVite for #struct_ident {
+                fn get(&self, file_path: &str) -> Option<#crate_path::ViteFile>  {
+                    #struct_ident::get(file_path)
+                }
+
+                fn clone_box(&self) -> ::std::boxed::Box<dyn #crate_path::GetFromVite> {
+                    ::std::boxed::Box::new(#struct_ident {})
                 }
             }
         })

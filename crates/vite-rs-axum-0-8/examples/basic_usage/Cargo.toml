@@ -1,0 +1,12 @@
+[package]
+name = "basic_usage"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", default-features = false, features = ["macros", "rt-multi-thread"] }
+vite-rs = { path = "../../../vite-rs" }
+vite-rs-axum-0-8 = { path = "../../" }
+
+[workspace]

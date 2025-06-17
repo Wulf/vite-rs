@@ -12,9 +12,9 @@ _Cargo, please compile & bundle the frontend too. Thanks._
 - Low-touch;
   - No build script changes required.
   - No `package.json` changes required.
-  - No Vite config changes, but:
+  - No Vite config changes ([except one](#vite-rs-hmr-config-change) for HMR), and:
     - this crate [forces](#require-manifest-true-note) manifest generation,
-    - and requires [specifying the output directory](#require-specifying-custom-vite-build-dir) (in Rust) if you've changed it from the default in your vite config.
+    - requires [specifying the output directory](#require-specifying-custom-vite-build-dir) (in Rust) if you've changed it from the default in your vite config,
 
 > [!CAUTION]
 > We've written tests for Unix operating systems. Windows support is still a work-in-progress. Please report any issues you encounter!
@@ -29,6 +29,7 @@ fn main() {
 
   println!("Content-Type: {}", asset.content_type);
   println!("Content-Length: {}", asset.content_length);
+  println!("Content-Hash: {}", asset.content_hash);
   println!("Last-Modified: {}", asset.last_modified);
   println!("Content: {}", std::str::from_utf8(&asset.bytes).unwrap());
 }
@@ -36,13 +37,18 @@ fn main() {
 
 ## Table of Contents
 
-- [Quick Start](#quick-start)
+- Quick Start
+  - [Quick Start: All frameworks](#quick-start--all-frameworks)
+  - [Quick Start: Use with Axum 0.8](#quick-start--axum-0-8)
+- [Feature flags](#feature-flags)
 - [API](#api)
 - [Options](#options)
   - [`#[root = "<path>"]`](#root--path)
   - [`#[output = "<path>"]`](#output--path)
   - [`#[dev_server_port = "<port>"]`](#dev_server_port--port)
   - [`#[crate_path = "<path>"]`](#crate_path--path)
+- [Framework Integrations](#framework-integrations)
+  - [Axum 0.8](#integration--axum-0-8)
 - [Full Guide](#full-guide)
 - [Notes](#notes)
   - [Vite config options that require special consideration](#vite-config-options-that-require-special-consideration)
@@ -54,10 +60,11 @@ fn main() {
   - [How can I automatically bundle all files that match a pattern?](#how-can-i-automatically-bundle-all-files-that-match-a-pattern-like-html-bundletstsxjsjsx-etc-without-manually-listing-them)
   - [A note on compile times and large (or many) assets](#a-note-on-compile-times-and-large-or-many-assets)
   - [A note about unnecessary release rebuilds](#a-note-about-unnecessary-release-rebuilds)
-  - [Why double down on ViteJS in your project (as opposed to using a crates that bundle files)?](#why-double-down-on-vitejs-in-your-project-as-opposed-to-using-a-crates-that-bundle-files)
+  - [Why double down on ViteJS in your project (as opposed to using a crates that bundle files)?](#why-vite)
+  - [For contributors: why have a `test_projects` directory?](#why-test_projects-directory)
 - [Acknowledgements](#acknowledgements)
 
-## Quick Start
+## <a name="quick-start--all-frameworks"></a> Quick Start (all frameworks)
 
 1. You'll need a ViteJS project.
 
@@ -95,10 +102,18 @@ fn main() {
            input: ["index.html"],
          },
        },
+       // Uncomment this section if you're going to use `start_dev_server` in Rust:
+       // server: {
+       //   hmr: {
+       //     port: 21012,
+       //   },
+       // },
      });
      ```
 
-     You'll eventually have to change the `input` array to include all your entrypoints. Alternatively, see the [section below](#auto-bundle-all-files) for a way to automatically bundle all files that match a pattern.
+     **Note 1:** You can read more details about the `server.hmr.port` option [here](#vite-rs-hmr-config-change). HMR is important for your development experience; it allows you to see frontend changes without having to refresh your browser.
+
+     **Note 2:** You'll eventually have to change the `input` array to include all your entrypoints. Alternatively, see the [section below](#auto-bundle-all-files) for a way to automatically bundle all files that match a pattern.
 
      Create `app/index.html`:
 
@@ -138,6 +153,7 @@ fn main() {
 
         println!("Content-Type: {}", asset.content_type);
         println!("Content-Length: {}", asset.content_length);
+        println!("Content-Hash: {}", asset.content_hash);
         println!("Last-Modified: {:?}", asset.last_modified);
         println!("Content: {}", std::str::from_utf8(&asset.bytes).unwrap());
     }
@@ -155,7 +171,60 @@ fn main() {
 
 See the `crates/vite-rs/examples` and `crates/vite-rs/tests` folders for more examples.
 
-## API
+## <a name="quick-start--axum-0-8"></a> Quick Start (Use with Axum 0.8)
+
+1. Follow the "Quick Start" guide for all frameworks.
+
+2. Replace `src/main.rs` with:
+
+   ```rust
+   use axum::Router;
+   use vite_rs_axum_0_8::ViteServe;
+   use tokio::net::TcpListener;
+
+   #[derive(vite_rs::Embed)]
+   #[root = "./app"]
+   struct Assets;
+
+   #[tokio::main]
+   async fn main() {
+       #[cfg(debug_assertions)]
+       let _guard = Assets::start_dev_server(true);
+
+       println!("Starting server on http://localhost:3000");
+
+       let _ = axum::serve(
+           TcpListener::bind("0.0.0.0:3000").await.unwrap(),
+           Router::new()
+               .route_service("/", ViteServe::new(Assets::boxed()))
+               .route_service("/{*path}", ViteServe::new(Assets::boxed()))
+               .into_make_service(),
+       )
+       .await;
+   }
+   ```
+
+   **Note:** If you'd like to handle graceful shutdown and also manage the ViteJS dev server lifecycle in Rust, see the example binary in `crates/vite-rs-axum-0-8/test_projects/ctrl_c_handling_test`. Alternatively, you can manage the ViteJS dev server lifecycle [yourself](#self-managed-dev-server) in a separate terminal. Make sure your HMR port is [set correctly](#vite-rs-hmr-config-change).
+
+3. Run your binary and see your app being served at `http://localhost:3000/`!
+
+   ```sh
+   # Assets served from a Vite dev server:
+   cargo run
+
+   # or, to see the embedded assets in action:
+   cargo run --release
+   ```
+
+## <a name="feature-flags"></a> Feature Flags
+
+- `ctrlc`: (enabled by default) Handles Ctrl-C handling if you manage the ViteJS dev server in Rust.
+
+- `content-hash`: (enabled by default) Computes a SHA-256 content hash in release builds for all files. See the `ViteFile` struct's fields for more information. Useful for cache busting. In dev, this will use a weak hash that Vite generates internally using the content length and last modified time of the file.
+
+- `debug-prod`: Builds and embeds ViteJS content instead of serving from a dev server. Used to make non-release builds behave exactly like release builds.
+
+## <a name="api"></a> API
 
 When you derive the `vite_rs::Embed` trait, some methods are generated for your struct which allow you to interact with your Vite assets. In development, the methods differ in behavior from release builds.
 
@@ -178,13 +247,27 @@ struct Assets;
   Assets::iter() -> impl Iterator<Item = Cow<'static, str>>
   ```
 
-#### In development builds:
-
-- **GET ASSET**: Get an asset by its path. Fetches assets from the dev server over HTTP.
+- **REFERENCE ALL ASSETS**: Get a reference to all assets. Useful for passing your assets around.
 
   ```rust
-  Assets::get(path: &str) -> Option<vite_rs::ViteFile>
+  Assets::boxed() -> Box<dyn vite_rs::GetFromVite>
   ```
+
+  When you have a boxed reference, you can access individual assets like so:
+
+  ```rust
+  let assets = Assets::boxed();
+
+  let asset = assets.get("index.html").unwrap();
+  ```
+
+- **`ViteFile` STRUCT**: See [Rust doc](https://docs.rs/vite-rs/latest/vite_rs/?search=ViteFile) for `vite_rs::ViteFile`. Note: Rust docs only shows dev build fields. You'll have to click 'Source' to see the release build fields.
+
+#### In development builds:
+
+- **GET ASSET**: Get an asset by its path. Fetches assets from the dev server over HTTP. See the release build API for `Assets::get()` above.
+
+- **REFERENCE ALL ASSETS**: Get a reference to all assets. See the release build API for `Assets::boxed()` above.
 
 - **START DEV SERVER**: Starts the ViteJS dev server. This function returns an [RAII guard](https://doc.rust-lang.org/rust-by-example/scope/raii.html) that stops the dev server when it goes out of scope.
 
@@ -203,6 +286,8 @@ struct Assets;
   ```rust
   Assets::stop_dev_server()
   ```
+
+- **`ViteFile` STRUCT**: See [Rust doc](https://docs.rs/vite-rs/latest/vite_rs/?search=ViteFile) for `vite_rs::ViteFile`.
 
 Note: In development, you cannot iterate over all assets because there is no way to do so using the Vite dev server.
 
@@ -308,6 +393,12 @@ The derive macro (`#[vite_rs::Embed]`) supports the following options:
     struct Assets;
     ```
 
+## <a name="framework-integrations"></a> Framework Integrations
+
+### <a name="integration--axum-0-8"></a> Axum 0.8
+
+The `vite-rs-axum-0-8` crate provides an integration with Axum 0.8. It exposes a `Tower` service that serves embedded files similar to how you might serve static files in Axum. Go to the Crate's `README` for more details here: [`crates/vite-rs-axum-0-8`](crates/vite-rs-axum-0-8).
+
 ## Full Guide
 
 `vite-rs` makes it easy to use ViteJS in your Rust project. It tries to be simple by not requiring any changes to build scripts, Vite config files, or introduce additional tools/CLI. Everything is done via `cargo`:
@@ -401,6 +492,7 @@ The `ViteFile` struct has the following fields:
 
 - `content_type`: The content type of the asset.
 - `content_length`: The length of the asset in bytes.
+- `content_hash`: The content hash of the asset, which can be used for cache busting.
 - `last_modified`: The last modified date of the asset.
 - `bytes`: The asset's bytes.
 
@@ -428,7 +520,7 @@ called `Option::unwrap()` on a `None` value
 The reason is because we haven't setup Rust to handle the dev server lifecycle. We'll do this in the next section. For now, let's run it ourselves:
 
 ```sh
-npx vite --port 3000
+npx vite --port 21012
 ```
 
 and tell Rust to use this port:
@@ -436,7 +528,7 @@ and tell Rust to use this port:
 ```diff
   #[derive(vite_rs::Embed)]
   #[root = "./"]
-+ #[dev_server_port = "3000"]
++ #[dev_server_port = "21012"]
   struct Assets;
 ```
 
@@ -466,6 +558,7 @@ Our final binary will look like the following:
 ```diff
 #[derive(vite_rs::Embed)]
 #[root = "./"] // where the vite config lives
+#[dev_server_port = "21012"]
 struct Assets;
 
 fn main() {
@@ -486,11 +579,81 @@ fn main() {
 > [!NOTE]
 > We give 500ms for the dev server to start in this example. This shouldn't be necessary in webapp projects because the dev server would be ready by the time you switch to your browser. Moreover, frontend changes shouldn't cause a recompile/restart and instead propagate via Vite's [hot-module-replacement](https://vite.dev/guide/features.html#hot-module-replacement).
 
+Finally, we update our `vite.config.ts` to include the `server.hmr.port` option so that ViteJS knows which port to use for hot module replacement (HMR):
+
+```diff
+// vite.config.ts
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: ["views/index.html"],
+    },
+  },
++  server: {
++    hmr: {
++      port: 21012,
++    },
++  },
+});
+```
+
 And that's pretty much all there is to it!
 
 # Notes
 
 ### <a name="vite-config-note"></a>Vite config options that require special consideration
+
+- <a name="vite-rs-hmr-config-change"></a> [`server.hmr.port`](https://vite.dev/config/server-options.html#server-hmr): If you want to use Vite's hot module replacement (HMR) feature, you have to set the `server.hmr.port` option to your ViteJS dev server port.
+
+  ```ts
+  // vite.config.ts
+  import { defineConfig } from "vite";
+
+  export default defineConfig({
+    server: {
+      hmr: {
+        // see notes below if you're not sure what port number to use
+        port: VITEJS_DEV_SERVER_PORT,
+      },
+    },
+  });
+  ```
+
+  **Dev server port number:**
+
+  1. **If you use `vite-rs` to manage the dev server lifecycle**, it defaults to using `21012` as the ViteJS dev server port (or a random port if it isn't available). You can prevent it from using a random port by specifying the [`#[dev_server_port]`](#dev_server_port--port) attribute on your struct:
+
+     ```rust
+     #[vite_rs::Embed]
+     #[root = "./app"]
+     // port you want the ViteJS dev server to run on
+     #[dev_server_port = "21012"]
+     struct Assets;
+     ```
+
+  2. **If you self-manage** the ViteJS dev server's lifecycle, you'll notice that `5173` is the default port; however, it will select a random port when it's taken. To prevent this behaviour, specify the `server.port` and `server.strictPort` options in your Vite config:
+
+     ```ts
+     // vite.config.ts
+     import { defineConfig } from "vite";
+
+     export default defineConfig({
+       server: {
+         // any available port number
+         port: 5173,
+
+         // throw errors if the port is taken
+         strictPort: true,
+
+         hmr: {
+           // same as above
+           port: 5173,
+         },
+       },
+     });
+     ```
 
 - <a name="require-manifest-true-note"></a> [`build.manifest`](https://vite.dev/config/build-options.html#build-manifest): This option will automatically be overriden to `true` so that ViteJS generates a manifest file for builds. You don't need to update your config as `vite-rs` overrides it via a CLI flag when building. This means custom values won't be respected. To illustrate:
 
@@ -514,11 +677,25 @@ If you'd like to manage the ViteJS dev server lifecycle yourself, you have to te
 ```rust
 #[vite_rs::Embed]
 #[root = "./vite-app"]
-#[dev_server_port = "3000"] // the port your vite dev server is running on
+#[dev_server_port = "5173"] // the port your vite dev server is running on
 struct Assets;
 ```
 
 Now you can `npm start` your ViteJS dev server yourself, and `vite-rs` will know how to fetch assets from it in non-release runs.
+
+Sometimes, ViteJS may use a random port if the default (5173) or configured (`server.port`) port is taken. Therefore, it's also recommended to set the `server.strictPort` option in your Vite config to `true` so that it throws an error if the port is taken:
+
+```ts
+// vite.config.ts
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  server: {
+    port: 5173, // or any other port you want to use
+    strictPort: true, // throw an error if the port is taken
+  },
+});
+```
 
 ### Templating
 
@@ -549,7 +726,7 @@ If the community wants to approach this, here are some considerations to take no
 
 ### Web Frameworks
 
-We welcome contributions for specific web frameworks (actix, axum, etc). If you end up creating an integration crate, please let us know so we can link to it here.
+We welcome contributions for specific web frameworks (actix, [axum](#quick-start--axum-0-8), etc). If you end up creating an integration crate, please let us know so we can link to it here.
 
 ### <a name="ctrl-c-handler"></a>Ctrl-C Handling
 
@@ -664,9 +841,16 @@ In the future, `rolldown`, which is still in development, may allow us to achiev
 
 In other words, we believe ViteJS is a good bet for your bundling needs for the forseeable future.
 
+### <a name="why-test_projects-directory"></a> For contributors: why have a `test_projects` directory?
+
+This note is for those contributing to `vite-rs`.
+
+Crates may contain examples and test projects in the `test_projects` directory instead of the conventional `examples` directory.
+Although this means we lose some cargo integration (and cohesion with the Rust community), it allows us the flexibility to control feature flags and isolate dependencies for the examples/tests from the crate itself.
+
 # Acknowledgements
 
-Many thanks to @pyrossh and the greater Rust community for the [rust-embed](https://github.com/pyrossh/rust-embed/commit/a735c9e979e6425f1553c436fe15608f98fa1780) crate which was used as a reference.
+Many thanks to @pyrossh and the greater Rust community for the [rust-embed](https://github.com/pyrossh/rust-embed/commit/a735c9e979e6425f1553c436fe15608f98fa1780) crate which was used as an inspiration and reference.
 
 # License
 

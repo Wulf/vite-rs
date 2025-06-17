@@ -1,3 +1,6 @@
+/// NOTE: Breaking change: we changed the `last_modified` field to be of type String instead of
+/// u64 to match the HTTP standard for Last-Modified headers. This test needs to be updated before it is re-enabled.
+
 /// Note: we only have a single #[test] because we can't run multiple tests in parallel
 /// since the vite dev server can't be started multiple times.
 #[test]

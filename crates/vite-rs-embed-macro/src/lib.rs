@@ -1,6 +1,12 @@
 // #![feature(track_path)] // => please see comments @ crates/vite-rs/tests/recompilation_test.rs:43
 #![forbid(unsafe_code)]
 
+#[cfg(all(
+    feature = "content-hash",
+    any(feature = "debug-prod", not(debug_assertions))
+))]
+mod hash_utils;
+
 mod syn_utils;
 mod vite;
 

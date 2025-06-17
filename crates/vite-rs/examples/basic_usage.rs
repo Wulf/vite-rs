@@ -5,18 +5,18 @@ use vite_rs::Embed;
 struct Assets;
 
 fn main() {
-    #[cfg(debug_assertions)]
+    #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
     // We use an RAII guard to gracefully exit the dev server
     let _guard = Assets::start_dev_server(true);
 
-    #[cfg(debug_assertions)]
+    #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
     {
         // only needed for this example
         println!("Waiting for the dev server to start (2 second)");
         std::thread::sleep(std::time::Duration::from_secs(2));
     }
 
-    #[cfg(not(debug_assertions))]
+    #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
     {
         Assets::iter().for_each(|file_name| {
             println!("ENTRY: {}", file_name);
@@ -29,7 +29,7 @@ fn main() {
 
     println!("{}", file_content);
 
-    #[cfg(debug_assertions)]
+    #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
     assert_eq!(
         strip_space(file_content),
         strip_space(
@@ -60,7 +60,7 @@ fn main() {
         )
     );
 
-    #[cfg(not(debug_assertions))]
+    #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
     assert_eq!(
         strip_space(file_content),
         strip_space(
@@ -74,7 +74,7 @@ fn main() {
 
     println!("{}", file_content);
 
-    #[cfg(debug_assertions)]
+    #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
     assert_eq!(
         strip_space(file_content),
         strip_space(
@@ -92,7 +92,7 @@ fn main() {
         )
     );
 
-    #[cfg(not(debug_assertions))]
+    #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
     assert_eq!(
         strip_space(file_content),
         strip_space(r#"const o=(console.log("This is a test"),3),s=o;console.log("NUM: ",s);"#)
