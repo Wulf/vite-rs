@@ -15,7 +15,7 @@ homepage.workspace = true
 proc-macro = true
 
 [dependencies]
-vite-rs-dev-server = { path = "../vite-rs-dev-server", version = "0.1.0" }
+vite-rs-dev-server = { path = "../vite-rs-dev-server", version = "0.2.0" }
 
 syn = { version = "2", default-features = false, features = [
     "derive",

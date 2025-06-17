@@ -9,7 +9,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 description = "Uses ViteJS to compile frontend assets and embeds the results into your Rust binary. (Serves from the ViteJS dev server in development.)"
 repository = "https://github.com/Wulf/vite-rs"
 readme = "README.md"
