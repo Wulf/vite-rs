@@ -1,5 +1,5 @@
 [package]
-name = "axum_test"
+name = "ctrl_c_handling_test"
 version = "1.0.0"
 edition = "2024"
 publish = false
@@ -12,7 +12,7 @@ path = "src/main.rs"
 axum = { version = "0.8", features = ["macros"] }
 ctrlc = { version = "3", features = ["termination"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-vite-rs = { path = "../../../vite-rs", version="0.1.0", default-features = false, features=["content-hash"] }
+vite-rs = { path = "../../../vite-rs", version="0.2.0", default-features = false, features=["content-hash"] }
 vite-rs-axum-0-8 = { path = "../../" }
 
 [features]
