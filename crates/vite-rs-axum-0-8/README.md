@@ -34,7 +34,7 @@ The exposed `ViteServe` service can be used as a fallback service or mounted at 
 
        println!("Starting server on http://localhost:3000");
 
-       let _ = axum::serve(
+       axum::serve(
            tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap(),
            axum::Router::new()
                // we mount our Vite app to /
@@ -44,7 +44,8 @@ The exposed `ViteServe` service can be used as a fallback service or mounted at 
                // .fallback_service(ViteServe::new(Assets::boxed()))
                .into_make_service(),
        )
-       .await;
+       .await
+       .unwrap()
    }
    ```
 

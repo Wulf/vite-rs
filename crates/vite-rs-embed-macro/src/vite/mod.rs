@@ -261,6 +261,7 @@ pub mod build {
 
                 pub fn get(path: &str) -> Option<#crate_path::ViteFile> {
                     let path = path.to_string();
+
                     std::thread::spawn(move || {
                         let client = #crate_path::vite_rs_dev_server::reqwest::blocking::Client::new();
                         let url = format!(
@@ -291,14 +292,6 @@ pub mod build {
                                 #etag
 
                                 let mut bytes = res.bytes().unwrap().to_vec();
-
-                                /// check if the path is a css file, if so, print a warning if the content type isn't text/css:
-                                if path.ends_with(".css") && !content_type.eq("text/css") {
-                                    println!(
-                                        "**WARNING**: A request for a CSS resource ({}) was served javascript. This is likely because you've referenced a CSS file in your HTML which was not in the `public` directory (configurable in the vite's config). This will still be fine in release builds, but the CSS won't be applied correctly in development. You can move the CSS file to the public directory (for example: `public/styles.css`) and reference it in your HTML with a `<link rel=\"stylesheet\" href=\"/styles.css\">` tag. Alternatively, you can import the CSS file in your JavaScript code with `import './styles.css';`.",
-                                        &url
-                                    );
-                                }
 
                                 Some(#crate_path::ViteFile {
                                     last_modified: None, /* we don't send this in dev! */

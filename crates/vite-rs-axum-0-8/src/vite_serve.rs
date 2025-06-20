@@ -57,43 +57,55 @@ impl ViteServe {
     {
         // Extract the path from the request, removing the leading slash
         let path = req.uri().path().trim_start_matches('/');
+        let query = req
+            .uri()
+            .query()
+            .map(|q| format!("?{}", q))
+            .unwrap_or_default();
 
         // If the path is empty, default to index.html
         let request_file_path = if path.is_empty() { "index.html" } else { path };
 
-        match self.assets.get(request_file_path) {
+        match self.assets.get(&format!("{}{}", request_file_path, query)) {
             Some(file) => {
-                let response = Response::builder();
+                let mut response = Response::builder();
 
-                let response = response.header("Content-Type", file.content_type);
-                let response = response.header("Content-Length", file.content_length);
+                response = response.header("Content-Type", file.content_type);
+                response = response.header("Content-Length", file.content_length);
 
-                let (response, etag) = {
+                let etag = {
                     #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
-                    let etag = file.content_hash;
+                    {
+                        file.content_hash
+                    }
 
                     #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
-                    let etag = &file.content_hash;
-
-                    (response.status(200).header("ETag", etag), etag)
+                    {
+                        &file.content_hash
+                    }
                 };
 
-                let response = match self.cache_strategy {
+                response = response.status(200).header("ETag", etag);
+
+                match self.cache_strategy {
                     CacheStrategy::Eager => {
-                        response.header("Cache-Control", "max-age=0, must-revalidate")
+                        response = response.header("Cache-Control", "max-age=0, must-revalidate");
                     }
                     CacheStrategy::Lazy => {
-                        response.header("Cache-Control", "max-age=0, stale-while-revalidate=604800")
+                        response = response
+                            .header("Cache-Control", "max-age=0, stale-while-revalidate=604800");
                     }
-                    CacheStrategy::None => response.header("Cache-Control", "no-cache"),
-                    CacheStrategy::Custom(header) => response.header("Cache-Control", header),
+                    CacheStrategy::None => {
+                        response = response.header("Cache-Control", "no-cache");
+                    }
+                    CacheStrategy::Custom(header) => {
+                        response = response.header("Cache-Control", header);
+                    }
                 };
 
-                let response = if let Some(last_modified) = file.last_modified {
-                    response.header("Last-Modified", last_modified)
-                } else {
-                    response
-                };
+                if let Some(last_modified) = file.last_modified {
+                    response = response.header("Last-Modified", last_modified);
+                }
 
                 match req.headers().get(axum::http::header::IF_NONE_MATCH) {
                     Some(header) => {
