@@ -1,15 +1,15 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/vite-rs", 
+    "crates/vite-rs",
     "crates/vite-rs-axum-0-8",
     "crates/vite-rs-dev-server",
-    "crates/vite-rs-embed-macro", 
+    "crates/vite-rs-embed-macro",
     "crates/vite-rs-interface",
 ]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
 description = "Uses ViteJS to compile frontend assets and embeds the results into your Rust binary. (Serves from the ViteJS dev server in development.)"
 repository = "https://github.com/Wulf/vite-rs"
 readme = "README.md"
