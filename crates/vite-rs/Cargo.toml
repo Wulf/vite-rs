@@ -27,12 +27,19 @@ ctrlc = { version = "3.4.4" }                       # for examples and tests
 sha2 = "0.10.9"                                     # for tests
 
 [dependencies]
-vite-rs-embed-macro = { path = "../vite-rs-embed-macro", version = "0.2.0" }
-vite-rs-dev-server = { path = "../vite-rs-dev-server", version = "0.2.0" }
-vite-rs-interface = { path = "../vite-rs-interface", version = "0.2.0" }
+vite-rs-embed-macro = { path = "../vite-rs-embed-macro", version = "0.2.1" }
+vite-rs-dev-server = { path = "../vite-rs-dev-server", version = "0.2.1" }
+vite-rs-interface = { path = "../vite-rs-interface", version = "0.2.1" }
 
 [features]
 default = ["ctrlc", "content-hash"]
 ctrlc = ["vite-rs-dev-server/ctrlc", "vite-rs-embed-macro/ctrlc"]
-debug-prod = ["vite-rs-interface/debug-prod", "vite-rs-dev-server/debug-prod", "vite-rs-embed-macro/debug-prod"]
-content-hash = ["vite-rs-interface/content-hash", "vite-rs-embed-macro/content-hash"]
+debug-prod = [
+    "vite-rs-interface/debug-prod",
+    "vite-rs-dev-server/debug-prod",
+    "vite-rs-embed-macro/debug-prod",
+]
+content-hash = [
+    "vite-rs-interface/content-hash",
+    "vite-rs-embed-macro/content-hash",
+]
