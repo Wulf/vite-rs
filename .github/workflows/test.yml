@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest] # todo: add 'windows-latest'
+        os: [ubuntu-latest, macOS-latest, windows-latest]
         rust: [stable]
         experimental: [false]
         # Note: We're no longer reliant on nightly, so we can remove this.

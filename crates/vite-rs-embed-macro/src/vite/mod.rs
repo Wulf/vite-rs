@@ -45,18 +45,35 @@ pub mod build {
             p.to_str().unwrap().to_string()
         };
 
-        let vite_build = std::process::Command::new("npx")
-            .arg("vite")
-            .arg("build")
-            .arg("--manifest") // force manifest generation to `.vite/manifest.json`
-            .arg("--outDir")
-            .arg(&absolute_output_path)
-            .current_dir(absolute_root_dir)
-            .spawn()
-            .expect("failed to build")
-            .wait()
-            .expect("failed to wait for build to complete")
-            .success();
+        let vite_build = if cfg!(target_os = "windows") {
+            std::process::Command::new("cmd")
+                .arg("/c")
+                .arg("npx")
+                .arg("vite")
+                .arg("build")
+                .arg("--manifest") // force manifest generation to `.vite/manifest.json`
+                .arg("--outDir")
+                .arg(&absolute_output_path)
+                .current_dir(absolute_root_dir)
+                .spawn()
+                .expect("failed to build")
+                .wait()
+                .expect("failed to wait for build to complete")
+                .success()
+        } else {
+            std::process::Command::new("npx")
+                .arg("vite")
+                .arg("build")
+                .arg("--manifest") // force manifest generation to `.vite/manifest.json`
+                .arg("--outDir")
+                .arg(&absolute_output_path)
+                .current_dir(absolute_root_dir)
+                .spawn()
+                .expect("failed to build")
+                .wait()
+                .expect("failed to wait for build to complete")
+                .success()
+        };
 
         if !vite_build {
             return Err(syn::Error::new(
@@ -122,12 +139,16 @@ pub mod build {
                 .iter()
                 .filter(|e| e.1.isEntry.unwrap_or(false))
                 .for_each(|(key, value)| {
-                    if !match_values.contains_key(key) {
+                    let normalized_key = key.replace("/", &std::path::MAIN_SEPARATOR.to_string());
+                    if !match_values.contains_key(&normalized_key) {
                         aliases.insert(key.clone(), value.file.clone());
                     }
                 });
 
             aliases.into_iter().map(|(alias, path)| {
+                // On Windows, manifest paths are still forward slashes, so we need to fix that
+                let alias = alias.replace("/", &std::path::MAIN_SEPARATOR.to_string());
+                let path = path.replace("/", &std::path::MAIN_SEPARATOR.to_string());
                 quote! {
                     (#alias, #path),
                 }

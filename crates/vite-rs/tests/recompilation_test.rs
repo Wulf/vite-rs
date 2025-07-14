@@ -20,22 +20,22 @@ mod release_tests {
     use std::path::PathBuf;
 
     pub fn ensure_binary_recompiles_on_asset_change() {
-        delete_asset_if_exists("app/test2.txt");
+        delete_asset_if_exists(&format!("app{}test2.txt", std::path::MAIN_SEPARATOR));
         compile_test_project();
         ensure_assets_exist(vec![
-            /* "app/test.txt" -> */ "assets/test-BPR99Ku7.txt",
+            /* "app/test.txt" -> */ &format!("assets{}test-BPR99Ku7.txt", std::path::MAIN_SEPARATOR),
         ]);
         let binary_last_modified = get_compiled_binary_modified_time();
 
-        add_asset("app/test2.txt", "123");
+        add_asset(&format!("app{}test2.txt", std::path::MAIN_SEPARATOR), "123");
         compile_test_project();
         ensure_assets_exist(vec![
-            /* "app/test2.txt" -> */ "assets/test2-CajEw_O3.txt",
-            /* "app/test.txt" -> */ "assets/test-BPR99Ku7.txt",
+            /* "app/test2.txt" -> */ &format!("assets{}test2-CajEw_O3.txt", std::path::MAIN_SEPARATOR),
+            /* "app/test.txt" -> */ &format!("assets{}test-BPR99Ku7.txt", std::path::MAIN_SEPARATOR),
         ]);
         let binary_last_modified_2 = get_compiled_binary_modified_time();
 
-        delete_asset_if_exists("app/test2.txt"); // cleanup
+        delete_asset_if_exists(&format!("app{}test2.txt", std::path::MAIN_SEPARATOR)); // cleanup
 
         assert!(
             binary_last_modified_2 - binary_last_modified > 0,
@@ -121,10 +121,10 @@ mod release_tests {
         // the `crates/vite-rs` directory when running the tests.
         //
         // let's make sure this comment is correct by doing this assertion:
-        assert!(workspace_dir.ends_with("crates/vite-rs"));
+        assert!(workspace_dir.ends_with(&format!("crates{}vite-rs", std::path::MAIN_SEPARATOR)));
 
         let test_project_path =
-            PathBuf::from_iter(&[&workspace_dir, "test_projects/recompilation_test"]);
+            PathBuf::from_iter(&[&workspace_dir, &format!("test_projects{}recompilation_test", std::path::MAIN_SEPARATOR)]);
 
         test_project_path
     }
@@ -143,8 +143,16 @@ mod release_tests {
     }
 
     fn get_binary_asset_list() -> Vec<String> {
-        let output = std::process::Command::new("./recompilation_test")
-            .current_dir(test_project_path().join("target/release"))
+        let executable_name = if cfg!(windows) {
+            "recompilation_test.exe"
+        } else {
+            "recompilation_test"
+        };
+        let base_dir = test_project_path().join("target/release");
+        let executable_path = base_dir.join(executable_name);
+
+        let output = std::process::Command::new(executable_path)
+            .current_dir(base_dir)
             .output()
             .expect("Failed to get the list of assets")
             .stdout;
@@ -157,7 +165,14 @@ mod release_tests {
     }
 
     fn get_compiled_binary_modified_time() -> u128 {
-        let binary_path = test_project_path().join("target/release/recompilation_test");
+        let executable_name = if cfg!(windows) {
+            "recompilation_test.exe"
+        } else {
+            "recompilation_test"
+        };
+        let binary_path = test_project_path()
+            .join("target/release")
+            .join(executable_name);
 
         let modified_time = binary_path
             .metadata()
