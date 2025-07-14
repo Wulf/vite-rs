@@ -35,23 +35,27 @@ fn ensure_asset_list() {
     let mut list = Assets::iter().collect::<Vec<_>>();
     list.sort();
 
-    let mut expected = if cfg!(target_os = "windows") {vec![
-        "assets\\vite-DcBtz0py.svg",
-        "assets\\index-BZiJcslM.js",
-        "assets\\pack1-B2m_tRuS.js",
-        "assets\\index-BPvgi06w.css",
-        // ".vite\\manifest.json",
-        "test.txt",
-        "app\\index.html",
-    ]}else{vec![
-        "assets/vite-DcBtz0py.svg",
-        "assets/index-BZiJcslM.js",
-        "assets/pack1-B2m_tRuS.js",
-        "assets/index-BPvgi06w.css",
-        // ".vite/manifest.json",
-        "test.txt",
-        "app/index.html",
-    ]};
+    let mut expected = if cfg!(target_os = "windows") {
+        vec![
+            "assets\\vite-DcBtz0py.svg",
+            "assets\\index-BZiJcslM.js",
+            "assets\\pack1-B2m_tRuS.js",
+            "assets\\index-BPvgi06w.css",
+            // ".vite\\manifest.json",
+            "test.txt",
+            "app\\index.html",
+        ]
+    } else {
+        vec![
+            "assets/vite-DcBtz0py.svg",
+            "assets/index-BZiJcslM.js",
+            "assets/pack1-B2m_tRuS.js",
+            "assets/index-BPvgi06w.css",
+            // ".vite/manifest.json",
+            "test.txt",
+            "app/index.html",
+        ]
+    };
     expected.sort();
 
     assert_eq!(list.len(), expected.len());
@@ -64,7 +68,11 @@ fn ensure_asset_list() {
 
 #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
 fn ensure_aliases() {
-    let aliases = if cfg!(windows) {vec![("app\\pack1.ts", "assets\\pack1-B2m_tRuS.js")]} else {vec![("app/pack1.ts", "assets/pack1-B2m_tRuS.js")]};
+    let aliases = if cfg!(windows) {
+        vec![("app\\pack1.ts", "assets\\pack1-B2m_tRuS.js")]
+    } else {
+        vec![("app/pack1.ts", "assets/pack1-B2m_tRuS.js")]
+    };
 
     for alias in aliases {
         assert_eq!(
@@ -122,7 +130,7 @@ fn ensure_html_entrypoint() {
             "<!DOCTYPEhtml>\r\n<htmllang=\"en\">\r\n<head>\r\n<metacharset=\"UTF-8\"/>\r\n<linkrel=\"icon\"type=\"image/svg+xml\"href=\"/assets/vite-DcBtz0py.svg\"/>\r\r\n<metaname=\"viewport\"content=\"width=device-width,initial-scale=1.0\"/>\r\n<title>vite-rs</title>\r\n<scripttype=\"module\"crossoriginsrc=\"/assets/index-BZiJcslM.js\"></script>\n<linkrel=\"stylesheet\"crossoriginhref=\"/assets/index-BPvgi06w.css\">\n</head>\r\n<body>\r\n<divid=\"root\"></div>\r\r\n</body>\r\n</html>\r\n"
             .replace(" ", "")
         );
-    }else{
+    } else {
         assert_eq!(
             content.replace(" ", ""),
             "<!DOCTYPEhtml>\n<htmllang=\"en\">\n<head>\n<metacharset=\"UTF-8\"/>\n<linkrel=\"icon\"type=\"image/svg+xml\"href=\"/assets/vite-DcBtz0py.svg\"/>\n<metaname=\"viewport\"content=\"width=device-width,initial-scale=1.0\"/>\n<title>vite-rs</title>\n<scripttype=\"module\"crossoriginsrc=\"/assets/index-BZiJcslM.js\"></script>\n<linkrel=\"stylesheet\"crossoriginhref=\"/assets/index-BPvgi06w.css\">\n</head>\n<body>\n<divid=\"root\"></div>\n</body>\n</html>\n"
@@ -152,7 +160,6 @@ fn ensure_ts_entrypoint() {
                 "consttest=(()=>{\nconsole.log(\"Thisisatest\");\nconsta=3;\nreturna;\n})();\nconstnum=test;\nconsole.log(\"NUM:\",num);\n\n//#sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInBhY2sxLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImNvbnN0IHRlc3QgPSAoKCkgPT4ge1xuICBjb25zb2xlLmxvZygnVGhpcyBpcyBhIHRlc3QnKVxuXG4gIGNvbnN0IGE6IG51bWJlciA9IDNcblxuICByZXR1cm4gYVxufSkoKVxuXG5jb25zdCBudW0gPSB0ZXN0XG5cbmNvbnNvbGUubG9nKCdOVU06ICcsIG51bSlcbiJdLCJtYXBwaW5ncyI6IkFBQUEsTUFBTSxRQUFRLE1BQU07QUFDbEIsVUFBUSxJQUFJLGdCQUFnQjtBQUU1QixRQUFNLElBQVk7QUFFbEIsU0FBTztBQUNULEdBQUc7QUFFSCxNQUFNLE1BQU07QUFFWixRQUFRLElBQUksU0FBUyxHQUFHOyIsIm5hbWVzIjpbXX0="
             );
         }
-
     }
 
     #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
@@ -185,7 +192,11 @@ fn ensure_content_hash_is_correct() {
     #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
     let included_file = Assets::get(&format!("app{}index.ts", std::path::MAIN_SEPARATOR)).unwrap();
     #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
-    let included_file = Assets::get(&format!("assets{}index-BZiJcslM.js", std::path::MAIN_SEPARATOR)).unwrap();
+    let included_file = Assets::get(&format!(
+        "assets{}index-BZiJcslM.js",
+        std::path::MAIN_SEPARATOR
+    ))
+    .unwrap();
 
     check_hash(public_file);
     check_hash(input_file);

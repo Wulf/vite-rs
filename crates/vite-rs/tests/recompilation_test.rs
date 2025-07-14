@@ -22,16 +22,19 @@ mod release_tests {
     pub fn ensure_binary_recompiles_on_asset_change() {
         delete_asset_if_exists(&format!("app{}test2.txt", std::path::MAIN_SEPARATOR));
         compile_test_project();
-        ensure_assets_exist(vec![
-            /* "app/test.txt" -> */ &format!("assets{}test-BPR99Ku7.txt", std::path::MAIN_SEPARATOR),
-        ]);
+        ensure_assets_exist(vec![/* "app/test.txt" -> */ &format!(
+            "assets{}test-BPR99Ku7.txt",
+            std::path::MAIN_SEPARATOR
+        )]);
         let binary_last_modified = get_compiled_binary_modified_time();
 
         add_asset(&format!("app{}test2.txt", std::path::MAIN_SEPARATOR), "123");
         compile_test_project();
         ensure_assets_exist(vec![
-            /* "app/test2.txt" -> */ &format!("assets{}test2-CajEw_O3.txt", std::path::MAIN_SEPARATOR),
-            /* "app/test.txt" -> */ &format!("assets{}test-BPR99Ku7.txt", std::path::MAIN_SEPARATOR),
+            /* "app/test2.txt" -> */
+            &format!("assets{}test2-CajEw_O3.txt", std::path::MAIN_SEPARATOR),
+            /* "app/test.txt" -> */
+            &format!("assets{}test-BPR99Ku7.txt", std::path::MAIN_SEPARATOR),
         ]);
         let binary_last_modified_2 = get_compiled_binary_modified_time();
 
@@ -123,8 +126,13 @@ mod release_tests {
         // let's make sure this comment is correct by doing this assertion:
         assert!(workspace_dir.ends_with(&format!("crates{}vite-rs", std::path::MAIN_SEPARATOR)));
 
-        let test_project_path =
-            PathBuf::from_iter(&[&workspace_dir, &format!("test_projects{}recompilation_test", std::path::MAIN_SEPARATOR)]);
+        let test_project_path = PathBuf::from_iter(&[
+            &workspace_dir,
+            &format!(
+                "test_projects{}recompilation_test",
+                std::path::MAIN_SEPARATOR
+            ),
+        ]);
 
         test_project_path
     }
