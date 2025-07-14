@@ -24,7 +24,7 @@ fn main() {
     }
 
     println!("Reading index.html:");
-    let file = Assets::get("app/index.html").unwrap();
+    let file = Assets::get(&format!("app{}index.html", std::path::MAIN_SEPARATOR)).unwrap();
     let file_content = std::str::from_utf8(&file.bytes).unwrap();
 
     println!("{}", file_content);
@@ -69,12 +69,12 @@ fn main() {
     );
 
     println!("Reading pack1.js:");
-    let file = Assets::get("app/pack1.ts").unwrap();
+    let file = Assets::get(&format!("app{}pack1.ts", std::path::MAIN_SEPARATOR)).unwrap();
     let file_content = std::str::from_utf8(&file.bytes).unwrap();
 
     println!("{}", file_content);
 
-    #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
+    #[cfg(all(debug_assertions, not(feature = "debug-prod"), not(windows)))]
     assert_eq!(
         strip_space(file_content),
         strip_space(
@@ -92,6 +92,24 @@ fn main() {
         )
     );
 
+    #[cfg(all(debug_assertions, not(feature = "debug-prod"), windows))]
+    assert_eq!(
+        strip_space(file_content),
+        strip_space(
+            r#"
+            const test = (() => {
+                console.log("This is a test");
+                const a = 3;
+                return a;
+            })();
+            const num = test;
+            console.log("NUM: ", num);
+
+            //# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInBhY2sxLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImNvbnN0IHRlc3QgPSAoKCkgPT4ge1xyXG4gIGNvbnNvbGUubG9nKCdUaGlzIGlzIGEgdGVzdCcpXHJcblxyXG4gIGNvbnN0IGE6IG51bWJlciA9IDNcclxuXHJcbiAgcmV0dXJuIGFcclxufSkoKVxyXG5cclxuY29uc3QgbnVtID0gdGVzdFxyXG5cclxuY29uc29sZS5sb2coJ05VTTogJywgbnVtKVxyXG4iXSwibWFwcGluZ3MiOiJBQUFBLE1BQU0sUUFBUSxNQUFNO0FBQ2xCLFVBQVEsSUFBSSxnQkFBZ0I7QUFFNUIsUUFBTSxJQUFZO0FBRWxCLFNBQU87QUFDVCxHQUFHO0FBRUgsTUFBTSxNQUFNO0FBRVosUUFBUSxJQUFJLFNBQVMsR0FBRzsiLCJuYW1lcyI6W119
+        "#
+        )
+    );
+
     #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
     assert_eq!(
         strip_space(file_content),
@@ -100,5 +118,5 @@ fn main() {
 }
 
 fn strip_space(s: &str) -> String {
-    s.trim().replace(" ", "")
+    s.trim().replace(" ", "").replace('\r', "")
 }
