@@ -37,6 +37,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
       - uses: actions/checkout@master
       - name: Install npm packages for examples & tests
+        shell: bash
         run: |
           (cd ./crates/vite-rs/test_projects && npm ci)
           (cd ./crates/vite-rs-axum-0-8/test_projects/basic_usage_test/app && npm ci)
@@ -53,6 +54,7 @@ jobs:
           cargo test -p vite-rs-axum-0-8
           cargo test -p vite-rs-axum-0-8 --release
       - name: Run/compile examples
+        shell: bash
         run: |
           # VITE-RS
           cargo run -p vite-rs --example basic_usage
