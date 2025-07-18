@@ -105,7 +105,30 @@ pub fn start_dev_server(
 
     // println!("Starting dev server!");
     // start ViteJS dev server
-    let child = Arc::new(Mutex::new(
+    let child = Arc::new(Mutex::new(if cfg!(target_os = "windows") {
+        std::process::Command::new("cmd")
+            .arg("/C")
+            .arg("npx")
+            .arg("vite")
+            .arg("--host")
+            .arg(host)
+            .arg("--port")
+            .arg(port.to_string())
+            .arg("--strictPort")
+            .arg("--clearScreen")
+            .arg("false")
+            // we don't want to send stdin to the dev server; this also
+            // hides the "press h + enter to show help" message that the dev server prints
+            .stdin(std::process::Stdio::null())
+            .current_dir(
+                absolute_root_dir, /*format!(
+                                       "{}/examples/basic_usage",
+                                       std::env::var("CARGO_MANIFEST_DIR").unwrap()
+                                   )*/
+            )
+            .group_spawn()
+            .expect("failed to start ViteJS dev server")
+    } else {
         std::process::Command::new("npx")
             .arg("vite")
             .arg("--host")
@@ -125,8 +148,8 @@ pub fn start_dev_server(
                                    )*/
             )
             .group_spawn()
-            .expect("failed to start ViteJS dev server"),
-    ));
+            .expect("failed to start ViteJS dev server")
+    }));
     set_dev_server(ViteProcess(child.clone()));
 
     #[cfg(feature = "ctrlc")]

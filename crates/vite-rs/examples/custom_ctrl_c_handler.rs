@@ -69,5 +69,5 @@ fn main() {
 }
 
 fn strip_space(s: &str) -> String {
-    s.trim().replace(" ", "")
+    s.trim().replace(" ", "").replace("\r", "")
 }

@@ -78,25 +78,49 @@ fn ensure_html_entrypoint() {
 
     assert_eq!(file.content_type, "text/html");
     #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
-    assert_eq!(file.content_length, 475);
+    if cfg!(windows) {
+        assert_eq!(file.content_length, 489);
+    } else {
+        assert_eq!(file.content_length, 475);
+    }
     #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
-    assert_eq!(file.content_length, 470);
+    if cfg!(windows) {
+        assert_eq!(file.content_length, 484);
+    } else {
+        assert_eq!(file.content_length, 470);
+    }
 
     let content = std::str::from_utf8(&file.bytes).unwrap();
 
     #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
-    assert_eq!(
-        content.replace(" ", ""),
-        "<!DOCTYPEhtml>\n<htmllang=\"en\">\n<head>\n<scripttype=\"module\"src=\"/@vite/client\"></script>\n\n<metacharset=\"UTF-8\"/>\n<linkrel=\"icon\"type=\"image/svg+xml\"href=\"./vite.svg\"/>\n<linkrel=\"stylsheet\"type=\"text/css\"href=\"./index.css\"/>\n<metaname=\"viewport\"content=\"width=device-width,initial-scale=1.0\"/>\n<title>vite-rs</title>\n</head>\n<body>\n<divid=\"root\"></div>\n<scripttype=\"module\"src=\"./index.ts\"></script>\n</body>\n</html>\n"
-        .replace(" ", "")
-    );
+    if cfg!(windows) {
+        assert_eq!(
+            content.replace(" ", ""),
+            "<!DOCTYPEhtml>\r\n<htmllang=\"en\">\r\n<head>\n<scripttype=\"module\"src=\"/@vite/client\"></script>\n\r\n<metacharset=\"UTF-8\"/>\r\n<linkrel=\"icon\"type=\"image/svg+xml\"href=\"./vite.svg\"/>\r\n<linkrel=\"stylsheet\"type=\"text/css\"href=\"./index.css\"/>\r\n<metaname=\"viewport\"content=\"width=device-width,initial-scale=1.0\"/>\r\n<title>vite-rs</title>\r\n</head>\r\n<body>\r\n<divid=\"root\"></div>\r\n<scripttype=\"module\"src=\"./index.ts\"></script>\r\n</body>\r\n</html>\r\n"
+            .replace(" ", "")
+        );
+    } else {
+        assert_eq!(
+            content.replace(" ", ""),
+            "<!DOCTYPEhtml>\n<htmllang=\"en\">\n<head>\n<scripttype=\"module\"src=\"/@vite/client\"></script>\n\n<metacharset=\"UTF-8\"/>\n<linkrel=\"icon\"type=\"image/svg+xml\"href=\"./vite.svg\"/>\n<linkrel=\"stylsheet\"type=\"text/css\"href=\"./index.css\"/>\n<metaname=\"viewport\"content=\"width=device-width,initial-scale=1.0\"/>\n<title>vite-rs</title>\n</head>\n<body>\n<divid=\"root\"></div>\n<scripttype=\"module\"src=\"./index.ts\"></script>\n</body>\n</html>\n"
+            .replace(" ", "")
+        );
+    }
 
     #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
-    assert_eq!(
-        content.replace(" ", ""),
-        "<!DOCTYPEhtml>\n<htmllang=\"en\">\n<head>\n<metacharset=\"UTF-8\"/>\n<linkrel=\"icon\"type=\"image/svg+xml\"href=\"/assets/vite-DcBtz0py.svg\"/>\n<metaname=\"viewport\"content=\"width=device-width,initial-scale=1.0\"/>\n<title>vite-rs</title>\n<scripttype=\"module\"crossoriginsrc=\"/assets/index-BZiJcslM.js\"></script>\n<linkrel=\"stylesheet\"crossoriginhref=\"/assets/index-BPvgi06w.css\">\n</head>\n<body>\n<divid=\"root\"></div>\n</body>\n</html>\n"
-        .replace(" ", "")
-    );
+    if cfg!(windows) {
+        assert_eq!(
+            content.replace(" ", ""),
+            "<!DOCTYPEhtml>\r\n<htmllang=\"en\">\r\n<head>\r\n<metacharset=\"UTF-8\"/>\r\n<linkrel=\"icon\"type=\"image/svg+xml\"href=\"/assets/vite-DcBtz0py.svg\"/>\r\r\n<metaname=\"viewport\"content=\"width=device-width,initial-scale=1.0\"/>\r\n<title>vite-rs</title>\r\n<scripttype=\"module\"crossoriginsrc=\"/assets/index-BZiJcslM.js\"></script>\n<linkrel=\"stylesheet\"crossoriginhref=\"/assets/index-BPvgi06w.css\">\n</head>\r\n<body>\r\n<divid=\"root\"></div>\r\r\n</body>\r\n</html>\r\n"
+            .replace(" ", "")
+        );
+    } else {
+        assert_eq!(
+            content.replace(" ", ""),
+            "<!DOCTYPEhtml>\n<htmllang=\"en\">\n<head>\n<metacharset=\"UTF-8\"/>\n<linkrel=\"icon\"type=\"image/svg+xml\"href=\"/assets/vite-DcBtz0py.svg\"/>\n<metaname=\"viewport\"content=\"width=device-width,initial-scale=1.0\"/>\n<title>vite-rs</title>\n<scripttype=\"module\"crossoriginsrc=\"/assets/index-BZiJcslM.js\"></script>\n<linkrel=\"stylesheet\"crossoriginhref=\"/assets/index-BPvgi06w.css\">\n</head>\n<body>\n<divid=\"root\"></div>\n</body>\n</html>\n"
+            .replace(" ", "")
+        );
+    }
 }
 
 fn ensure_ts_entrypoint() {
@@ -105,12 +129,21 @@ fn ensure_ts_entrypoint() {
 
     #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
     {
-        assert_eq!(file.content_type, "text/javascript");
-        assert_eq!(file.content_length, 656);
-        assert_eq!(
-            content.replace(" ", ""),
-            "consttest=(()=>{\nconsole.log(\"Thisisatest\");\nconsta=3;\nreturna;\n})();\nconstnum=test;\nconsole.log(\"NUM:\",num);\n\n//#sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInBhY2sxLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImNvbnN0IHRlc3QgPSAoKCkgPT4ge1xuICBjb25zb2xlLmxvZygnVGhpcyBpcyBhIHRlc3QnKVxuXG4gIGNvbnN0IGE6IG51bWJlciA9IDNcblxuICByZXR1cm4gYVxufSkoKVxuXG5jb25zdCBudW0gPSB0ZXN0XG5cbmNvbnNvbGUubG9nKCdOVU06ICcsIG51bSlcbiJdLCJtYXBwaW5ncyI6IkFBQUEsTUFBTSxRQUFRLE1BQU07QUFDbEIsVUFBUSxJQUFJLGdCQUFnQjtBQUU1QixRQUFNLElBQVk7QUFFbEIsU0FBTztBQUNULEdBQUc7QUFFSCxNQUFNLE1BQU07QUFFWixRQUFRLElBQUksU0FBUyxHQUFHOyIsIm5hbWVzIjpbXX0="
-        );
+        if cfg!(windows) {
+            assert_eq!(file.content_type, "text/javascript");
+            assert_eq!(file.content_length, 684);
+            assert_eq!(
+                content.replace(" ", ""),
+                "consttest=(()=>{\nconsole.log(\"Thisisatest\");\nconsta=3;\nreturna;\n})();\nconstnum=test;\nconsole.log(\"NUM:\",num);\n\n//#sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInBhY2sxLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImNvbnN0IHRlc3QgPSAoKCkgPT4ge1xyXG4gIGNvbnNvbGUubG9nKCdUaGlzIGlzIGEgdGVzdCcpXHJcblxyXG4gIGNvbnN0IGE6IG51bWJlciA9IDNcclxuXHJcbiAgcmV0dXJuIGFcclxufSkoKVxyXG5cclxuY29uc3QgbnVtID0gdGVzdFxyXG5cclxuY29uc29sZS5sb2coJ05VTTogJywgbnVtKVxyXG4iXSwibWFwcGluZ3MiOiJBQUFBLE1BQU0sUUFBUSxNQUFNO0FBQ2xCLFVBQVEsSUFBSSxnQkFBZ0I7QUFFNUIsUUFBTSxJQUFZO0FBRWxCLFNBQU87QUFDVCxHQUFHO0FBRUgsTUFBTSxNQUFNO0FBRVosUUFBUSxJQUFJLFNBQVMsR0FBRzsiLCJuYW1lcyI6W119"
+            );
+        } else {
+            assert_eq!(file.content_type, "text/javascript");
+            assert_eq!(file.content_length, 656);
+            assert_eq!(
+                content.replace(" ", ""),
+                "consttest=(()=>{\nconsole.log(\"Thisisatest\");\nconsta=3;\nreturna;\n})();\nconstnum=test;\nconsole.log(\"NUM:\",num);\n\n//#sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInBhY2sxLnRzIl0sInNvdXJjZXNDb250ZW50IjpbImNvbnN0IHRlc3QgPSAoKCkgPT4ge1xuICBjb25zb2xlLmxvZygnVGhpcyBpcyBhIHRlc3QnKVxuXG4gIGNvbnN0IGE6IG51bWJlciA9IDNcblxuICByZXR1cm4gYVxufSkoKVxuXG5jb25zdCBudW0gPSB0ZXN0XG5cbmNvbnNvbGUubG9nKCdOVU06ICcsIG51bSlcbiJdLCJtYXBwaW5ncyI6IkFBQUEsTUFBTSxRQUFRLE1BQU07QUFDbEIsVUFBUSxJQUFJLGdCQUFnQjtBQUU1QixRQUFNLElBQVk7QUFFbEIsU0FBTztBQUNULEdBQUc7QUFFSCxNQUFNLE1BQU07QUFFWixRQUFRLElBQUksU0FBUyxHQUFHOyIsIm5hbWVzIjpbXX0="
+            );
+        }
     }
 
     #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
