@@ -18,7 +18,7 @@ pub mod build {
                 let path = entry.path();
                 let path = path.strip_prefix(absolute_output_path).unwrap();
                 let path = path.to_str().unwrap().replace("\\", "/");
-                
+
                 path
             })
             .filter(|path| !path.starts_with(".vite")) // ignore vite manifest or other vite-internal files
