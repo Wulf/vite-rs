@@ -230,7 +230,7 @@ async fn ensure_serves_imports(app: axum::Router) {
     let uri = if cfg!(all(debug_assertions, not(feature = "debug-prod"))) {
         "/script.tsx"
     } else {
-        &format!("/assets{}index-CgRBhnJL.js", std::path::MAIN_SEPARATOR)
+        "/assets/index-CgRBhnJL.js"
     };
 
     let request = http::Request::builder()

@@ -24,7 +24,7 @@ fn main() {
     }
 
     println!("Reading index.html:");
-    let file = Assets::get(&format!("app{}index.html", std::path::MAIN_SEPARATOR)).unwrap();
+    let file = Assets::get("app/index.html").unwrap();
     let file_content = std::str::from_utf8(&file.bytes).unwrap();
 
     println!("{}", file_content);
@@ -69,7 +69,7 @@ fn main() {
     );
 
     println!("Reading pack1.js:");
-    let file = Assets::get(&format!("app{}pack1.ts", std::path::MAIN_SEPARATOR)).unwrap();
+    let file = Assets::get("app/pack1.ts").unwrap();
     let file_content = std::str::from_utf8(&file.bytes).unwrap();
 
     println!("{}", file_content);

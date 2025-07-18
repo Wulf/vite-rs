@@ -35,27 +35,15 @@ fn ensure_asset_list() {
     let mut list = Assets::iter().collect::<Vec<_>>();
     list.sort();
 
-    let mut expected = if cfg!(target_os = "windows") {
-        vec![
-            "assets\\vite-DcBtz0py.svg",
-            "assets\\index-BZiJcslM.js",
-            "assets\\pack1-B2m_tRuS.js",
-            "assets\\index-BPvgi06w.css",
-            // ".vite\\manifest.json",
-            "test.txt",
-            "app\\index.html",
-        ]
-    } else {
-        vec![
-            "assets/vite-DcBtz0py.svg",
-            "assets/index-BZiJcslM.js",
-            "assets/pack1-B2m_tRuS.js",
-            "assets/index-BPvgi06w.css",
-            // ".vite/manifest.json",
-            "test.txt",
-            "app/index.html",
-        ]
-    };
+    let mut expected = vec![
+        "assets/vite-DcBtz0py.svg",
+        "assets/index-BZiJcslM.js",
+        "assets/pack1-B2m_tRuS.js",
+        "assets/index-BPvgi06w.css",
+        // ".vite/manifest.json",
+        "test.txt",
+        "app/index.html",
+    ];
     expected.sort();
 
     assert_eq!(list.len(), expected.len());
@@ -68,11 +56,7 @@ fn ensure_asset_list() {
 
 #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
 fn ensure_aliases() {
-    let aliases = if cfg!(windows) {
-        vec![("app\\pack1.ts", "assets\\pack1-B2m_tRuS.js")]
-    } else {
-        vec![("app/pack1.ts", "assets/pack1-B2m_tRuS.js")]
-    };
+    let aliases = vec![("app/pack1.ts", "assets/pack1-B2m_tRuS.js")];
 
     for alias in aliases {
         assert_eq!(
@@ -90,7 +74,7 @@ fn ensure_no_dot_vite_dir() {
 }
 
 fn ensure_html_entrypoint() {
-    let file = Assets::get(&format!("app{}index.html", std::path::MAIN_SEPARATOR)).unwrap();
+    let file = Assets::get("app/index.html").unwrap();
 
     assert_eq!(file.content_type, "text/html");
     #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
@@ -140,7 +124,7 @@ fn ensure_html_entrypoint() {
 }
 
 fn ensure_ts_entrypoint() {
-    let file = Assets::get(&format!("app{}pack1.ts", std::path::MAIN_SEPARATOR)).unwrap();
+    let file = Assets::get("app/pack1.ts").unwrap();
     let content = std::str::from_utf8(&file.bytes).unwrap();
 
     #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
@@ -188,15 +172,11 @@ fn ensure_no_vite_manifest() {
 
 fn ensure_content_hash_is_correct() {
     let public_file = Assets::get("test.txt").unwrap();
-    let input_file = Assets::get(&format!("app{}index.html", std::path::MAIN_SEPARATOR)).unwrap();
+    let input_file = Assets::get("app/index.html").unwrap();
     #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
-    let included_file = Assets::get(&format!("app{}index.ts", std::path::MAIN_SEPARATOR)).unwrap();
+    let included_file = Assets::get("app/index.ts").unwrap();
     #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
-    let included_file = Assets::get(&format!(
-        "assets{}index-BZiJcslM.js",
-        std::path::MAIN_SEPARATOR
-    ))
-    .unwrap();
+    let included_file = Assets::get("assets/index-BZiJcslM.js").unwrap();
 
     check_hash(public_file);
     check_hash(input_file);

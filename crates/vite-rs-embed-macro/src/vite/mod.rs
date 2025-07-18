@@ -17,8 +17,8 @@ pub mod build {
             .map(|entry| {
                 let path = entry.path();
                 let path = path.strip_prefix(absolute_output_path).unwrap();
-                let path = path.to_str().unwrap().to_string();
-
+                let path = path.to_str().unwrap().replace("\\", "/");
+                
                 path
             })
             .filter(|path| !path.starts_with(".vite")) // ignore vite manifest or other vite-internal files
@@ -139,16 +139,12 @@ pub mod build {
                 .iter()
                 .filter(|e| e.1.isEntry.unwrap_or(false))
                 .for_each(|(key, value)| {
-                    let normalized_key = key.replace("/", &std::path::MAIN_SEPARATOR.to_string());
-                    if !match_values.contains_key(&normalized_key) {
+                    if !match_values.contains_key(key) {
                         aliases.insert(key.clone(), value.file.clone());
                     }
                 });
 
             aliases.into_iter().map(|(alias, path)| {
-                // On Windows, manifest paths are still forward slashes, so we need to fix that
-                let alias = alias.replace("/", &std::path::MAIN_SEPARATOR.to_string());
-                let path = path.replace("/", &std::path::MAIN_SEPARATOR.to_string());
                 quote! {
                     (#alias, #path),
                 }

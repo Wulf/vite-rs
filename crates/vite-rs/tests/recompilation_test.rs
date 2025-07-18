@@ -20,25 +20,24 @@ mod release_tests {
     use std::path::PathBuf;
 
     pub fn ensure_binary_recompiles_on_asset_change() {
-        delete_asset_if_exists(&format!("app{}test2.txt", std::path::MAIN_SEPARATOR));
+        delete_asset_if_exists("app/test2.txt");
         compile_test_project();
-        ensure_assets_exist(vec![/* "app/test.txt" -> */ &format!(
-            "assets{}test-BPR99Ku7.txt",
-            std::path::MAIN_SEPARATOR
-        )]);
+        ensure_assets_exist(vec![
+            /* "app/test.txt" -> */ "assets/test-BPR99Ku7.txt",
+        ]);
         let binary_last_modified = get_compiled_binary_modified_time();
 
-        add_asset(&format!("app{}test2.txt", std::path::MAIN_SEPARATOR), "123");
+        add_asset("app/test2.txt", "123");
         compile_test_project();
         ensure_assets_exist(vec![
             /* "app/test2.txt" -> */
-            &format!("assets{}test2-CajEw_O3.txt", std::path::MAIN_SEPARATOR),
+            "assets/test2-CajEw_O3.txt",
             /* "app/test.txt" -> */
-            &format!("assets{}test-BPR99Ku7.txt", std::path::MAIN_SEPARATOR),
+            "assets/test-BPR99Ku7.txt",
         ]);
         let binary_last_modified_2 = get_compiled_binary_modified_time();
 
-        delete_asset_if_exists(&format!("app{}test2.txt", std::path::MAIN_SEPARATOR)); // cleanup
+        delete_asset_if_exists("app/test2.txt"); // cleanup
 
         assert!(
             binary_last_modified_2 - binary_last_modified > 0,
