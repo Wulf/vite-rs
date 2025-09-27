@@ -3,7 +3,7 @@
 pub mod build {
     use proc_macro2::TokenStream as TokenStream2;
     use quote::quote;
-    use std::{collections::BTreeMap, path::PathBuf};
+    use std::{collections::BTreeMap, io::ErrorKind, path::PathBuf};
 
     mod file_entry;
     use file_entry::FileEntry;
@@ -32,6 +32,7 @@ pub mod build {
         struct_ident: &syn::Ident,
         absolute_root_dir: &str,
         relative_output_dir: &str,
+        npx_executable: &str,
     ) -> syn::Result<TokenStream2> {
         // proc_macro::tracked_path::path(absolute_root_dir); // => please see comments @ crates/vite-rs/tests/recompilation_test.rs:43
 
@@ -45,7 +46,7 @@ pub mod build {
             p.to_str().unwrap().to_string()
         };
 
-        let vite_build = std::process::Command::new("npx")
+        let mut vite_build = match std::process::Command::new(npx_executable)
             .arg("vite")
             .arg("build")
             .arg("--manifest") // force manifest generation to `.vite/manifest.json`
@@ -53,7 +54,23 @@ pub mod build {
             .arg(&absolute_output_path)
             .current_dir(absolute_root_dir)
             .spawn()
-            .expect("failed to build")
+        {
+            Ok(ok) => ok,
+            Err(err) => {
+                return Err(match err.kind() {
+                    ErrorKind::NotFound => syn::Error::new(
+                        proc_macro2::Span::call_site(),
+                        format!("Failed to build. Does the executable exist?: {}", err),
+                    ),
+                    _ => syn::Error::new(
+                        proc_macro2::Span::call_site(),
+                        format!("Failed to build: {}", err),
+                    ),
+                })
+            }
+        };
+
+        let vite_build = vite_build
             .wait()
             .expect("failed to wait for build to complete")
             .success();

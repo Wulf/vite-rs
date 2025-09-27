@@ -206,6 +206,30 @@ fn derive_crate_path(ast: &syn::DeriveInput) -> syn::Result<syn::Path> {
     Ok(syn::parse_str::<syn::Path>(crate_path)?)
 }
 
+/// The npx executable that will be used to invoke `vite`.
+/// By default, it is set to `npx` but can be overridden by specifying a `#[npx_executable = "executable"]` attribute under the derive macro.
+#[cfg(any(feature = "debug-prod", not(debug_assertions)))]
+fn derive_npx_executable(ast: &syn::DeriveInput) -> syn::Result<String> {
+    let npx_executable_attrs = syn_utils::find_attribute_values(ast, "npx_executable");
+    if npx_executable_attrs.len() > 1 {
+        return Err(syn::Error::new_spanned(
+            ast,
+            "When specifying an npx executable, #[derive(vite_rs::Embed)] must only contain a single #[npx_executable = \"executable\"] attribute.",
+        ));
+    }
+
+    let npx_executable = {
+        if npx_executable_attrs.len() == 0 {
+            // we don't use env!("CARGO_PKG_NAME") because this code is in the vite-rs-embed-macro, but the end user will be using vite-rs
+            "exec"
+        } else {
+            &npx_executable_attrs.get(0).unwrap()
+        }
+    };
+
+    Ok(npx_executable.to_string())
+}
+
 fn impl_vitejs_embed(ast: &syn::DeriveInput) -> syn::Result<TokenStream2> {
     syn_utils::ensure_unit_struct(ast)?;
 
@@ -230,6 +254,9 @@ fn impl_vitejs_embed(ast: &syn::DeriveInput) -> syn::Result<TokenStream2> {
         /* prod-only */
         #[cfg(any(feature = "debug-prod", not(debug_assertions)))]
         &relative_output_dir,
+        /* prod-only */
+        #[cfg(any(feature = "debug-prod", not(debug_assertions)))]
+        npx_executable
     )
 }
 
@@ -238,6 +265,7 @@ fn impl_vitejs_embed(ast: &syn::DeriveInput) -> syn::Result<TokenStream2> {
 /// - #[output]: derive_relative_output_dir (define above)
 /// - #[dev_server_port]: derive_dev_server_port (define above)
 /// - #[crate_path]: derive_crate_path (define above)
+/// - #[npx_executable]: derive npx executable path (define above)
 #[proc_macro_derive(Embed, attributes(root, output, dev_server_port, crate_path))]
 pub fn derive_input_object(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
