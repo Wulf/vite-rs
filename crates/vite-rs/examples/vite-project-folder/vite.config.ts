@@ -1,14 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      input: ['app/index.html', 'app/pack1.ts'],
+      input: [path.resolve(__dirname, 'app/index.html'), path.resolve(__dirname, 'app/pack1.ts')],
     },
     manifest: true, // **IMPORTANT**: this is required.
-    outDir: './dist', // this is the default value
+    outDir: path.resolve(__dirname, './dist'),
   },
-  publicDir: './public', // this is the default value
+  publicDir: path.resolve(__dirname, './public'),
 })

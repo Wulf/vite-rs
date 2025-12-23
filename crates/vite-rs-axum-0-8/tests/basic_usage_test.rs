@@ -185,10 +185,18 @@ async fn ensure_serves_index(app: axum::Router) {
     let body_bytes = body::to_bytes(response.into_body(), 2048).await.unwrap();
 
     #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
-    assert_eq!(body_bytes, "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <script type=\"module\">import { injectIntoGlobalHook } from \"/@react-refresh\";\ninjectIntoGlobalHook(window);\nwindow.$RefreshReg$ = () => {};\nwindow.$RefreshSig$ = () => (type) => type;</script>\n\n    <script type=\"module\" src=\"/@vite/client\"></script>\n\n    <title>Hello World</title>\n    <link rel=\"stylesheet\" href=\"/test.css\" />\n  </head>\n  <body>\n    <h1>Loading...</h1>\n    <script type=\"module\" src=\"/script.tsx\"></script>\n  </body>\n</html>\n");
+    if cfg!(windows) {
+        assert_eq!(body_bytes, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n  <head>\n    <script type=\"module\">import { injectIntoGlobalHook } from \"/@react-refresh\";\ninjectIntoGlobalHook(window);\nwindow.$RefreshReg$ = () => {};\nwindow.$RefreshSig$ = () => (type) => type;</script>\n\n    <script type=\"module\" src=\"/@vite/client\"></script>\n\r\n    <title>Hello World</title>\r\n    <link rel=\"stylesheet\" href=\"/test.css\" />\r\n  </head>\r\n  <body>\r\n    <h1>Loading...</h1>\r\n    <script type=\"module\" src=\"/script.tsx\"></script>\r\n  </body>\r\n</html>\r\n");
+    } else {
+        assert_eq!(body_bytes, "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <script type=\"module\">import { injectIntoGlobalHook } from \"/@react-refresh\";\ninjectIntoGlobalHook(window);\nwindow.$RefreshReg$ = () => {};\nwindow.$RefreshSig$ = () => (type) => type;</script>\n\n    <script type=\"module\" src=\"/@vite/client\"></script>\n\n    <title>Hello World</title>\n    <link rel=\"stylesheet\" href=\"/test.css\" />\n  </head>\n  <body>\n    <h1>Loading...</h1>\n    <script type=\"module\" src=\"/script.tsx\"></script>\n  </body>\n</html>\n");
+    }
 
     #[cfg(not(all(debug_assertions, not(feature = "debug-prod"))))]
-    assert_eq!(body_bytes, "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <title>Hello World</title>\n    <link rel=\"stylesheet\" href=\"/test.css\" />\n    <script type=\"module\" crossorigin src=\"/assets/index-CgRBhnJL.js\"></script>\n  </head>\n  <body>\n    <h1>Loading...</h1>\n  </body>\n</html>\n");
+    if cfg!(windows) {
+        assert_eq!(body_bytes, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n  <head>\r\n    <title>Hello World</title>\r\n    <link rel=\"stylesheet\" href=\"/test.css\" />\r\n    <script type=\"module\" crossorigin src=\"/assets/index-CgRBhnJL.js\"></script>\n  </head>\r\n  <body>\r\n    <h1>Loading...</h1>\r\r\n  </body>\r\n</html>\r\n");
+    } else {
+        assert_eq!(body_bytes, "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <title>Hello World</title>\n    <link rel=\"stylesheet\" href=\"/test.css\" />\n    <script type=\"module\" crossorigin src=\"/assets/index-CgRBhnJL.js\"></script>\n  </head>\n  <body>\n    <h1>Loading...</h1>\n  </body>\n</html>\n");
+    }
 }
 
 async fn ensure_serves_public_files(app: axum::Router) {
@@ -204,10 +212,18 @@ async fn ensure_serves_public_files(app: axum::Router) {
     let body_bytes = body::to_bytes(response.into_body(), 2048).await.unwrap();
 
     #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
-    assert_eq!(body_bytes, "body {\n  background-color: black;\n  color: white;\n  font-family: Arial, sans-serif;\n  padding: 42px;\n}\n");
+    if cfg!(windows) {
+        assert_eq!(body_bytes, "body {\r\n  background-color: black;\r\n  color: white;\r\n  font-family: Arial, sans-serif;\r\n  padding: 42px;\r\n}\r\n");
+    } else {
+        assert_eq!(body_bytes, "body {\n  background-color: black;\n  color: white;\n  font-family: Arial, sans-serif;\n  padding: 42px;\n}\n");
+    }
 
     #[cfg(not(all(debug_assertions, not(feature = "debug-prod"))))]
-    assert_eq!(body_bytes, "body {\n  background-color: black;\n  color: white;\n  font-family: Arial, sans-serif;\n  padding: 42px;\n}\n");
+    if cfg!(windows) {
+        assert_eq!(body_bytes, "body {\r\n  background-color: black;\r\n  color: white;\r\n  font-family: Arial, sans-serif;\r\n  padding: 42px;\r\n}\r\n");
+    } else {
+        assert_eq!(body_bytes, "body {\n  background-color: black;\n  color: white;\n  font-family: Arial, sans-serif;\n  padding: 42px;\n}\n");
+    }
 }
 
 async fn ensure_serves_imports(app: axum::Router) {

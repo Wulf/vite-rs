@@ -17,7 +17,7 @@ pub mod build {
             .map(|entry| {
                 let path = entry.path();
                 let path = path.strip_prefix(absolute_output_path).unwrap();
-                let path = path.to_str().unwrap().to_string();
+                let path = path.to_str().unwrap().replace("\\", "/");
 
                 path
             })
@@ -44,8 +44,11 @@ pub mod build {
 
             p.to_str().unwrap().to_string()
         };
-
-        let vite_build = std::process::Command::new("npx")
+        #[cfg(windows)]
+        pub const NPX: &'static str = "npx.cmd";
+        #[cfg(not(windows))]
+        pub const NPX: &'static str = "npx";
+        let vite_build = std::process::Command::new(NPX)
             .arg("vite")
             .arg("build")
             .arg("--manifest") // force manifest generation to `.vite/manifest.json`

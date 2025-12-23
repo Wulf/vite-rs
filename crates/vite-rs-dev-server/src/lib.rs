@@ -105,8 +105,12 @@ pub fn start_dev_server(
 
     // println!("Starting dev server!");
     // start ViteJS dev server
+    #[cfg(windows)]
+    pub const NPX: &'static str = "npx.cmd";
+    #[cfg(not(windows))]
+    pub const NPX: &'static str = "npx";
     let child = Arc::new(Mutex::new(
-        std::process::Command::new("npx")
+        std::process::Command::new(NPX)
             .arg("vite")
             .arg("--host")
             .arg(host)
