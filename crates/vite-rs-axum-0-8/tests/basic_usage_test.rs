@@ -2,7 +2,7 @@ mod util;
 
 use reqwest::StatusCode;
 use tower::ServiceExt;
-use vite_rs_axum_0_8::ViteServe;
+use vite_rs_axum_0_8::{FallbackStrategy, ViteServe};
 
 use axum::{
     body::{self, Body},
@@ -45,6 +45,10 @@ async fn test() {
     test_custom_cache_strategy().await;
 
     test_cache_response().await;
+
+    test_fallback_not_found().await;
+    test_fallback_spa_found().await;
+    test_fallback_spa_missing_fallback_file().await;
 }
 
 fn app_with_fallback_service() -> axum::Router {
@@ -249,4 +253,88 @@ async fn ensure_serves_imports(app: axum::Router) {
 
     #[cfg(not(all(debug_assertions, not(feature = "debug-prod"))))]
     assert!(body_bytes.starts_with(b"(function(){const vl=document.createElement(\"link\").relList;if(vl&&vl.supports&&vl.supports(\"modulepreload\"))return;for(const Q of document.querySelectorAll('link[rel=\"modulepreload\"]'))r(Q);new MutationObserver(Q=>{for(const L of Q)if(L.type===\"childList\")for(const tl of L.addedNodes)tl.tagName===\"LINK\"&&tl.rel===\"modulepreload\"&&r(tl)}).observe(document,{childList:!0,subtree:!0});function J(Q){const L={};return Q.integrity&&(L.integrity=Q.integrity),Q.referrerPolicy&&(L.referrerPolicy=Q.referrerPolicy),Q.crossOrigin===\"use-credentials\"?L.credentials=\"include\":Q.crossOrigin===\"anonymous\"?L.credentials=\"omit\":L.credentials=\"same-origin\",L}function r(Q){if(Q.ep)return;Q.ep=!0;const L=J(Q);fetch(Q.href,L)}})();const R1=\"modulepreload\",H1=function(_){return\"/\"+_},wv={},N1=function(vl,J,r){let Q=Promise.resolve();if(J&&J.length>0){let tl=function(T){return Promise.all(T.map(U=>Promise.resolve(U).then(k=>({status:\"fulfilled\",value:k}),k=>({status:\"rejected\",reason:k}))))};document.getElementsByTagName(\"link\""));
+}
+
+/// FallbackStrategy::NotFound returns 404 with an empty body for unknown paths.
+///
+/// In dev builds the Vite dev server itself handles every path and returns index.html (200), so
+/// FallbackStrategy::NotFound is not enforced at the ViteServe layer during development.
+async fn test_fallback_not_found() {
+    let app = axum::Router::new().fallback_service(ViteServe::new(Assets::boxed()));
+
+    let request = http::Request::builder()
+        .uri("/this/path/does/not/exist")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+
+    if cfg!(any(not(debug_assertions), feature = "debug-prod")) {
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let body_bytes = body::to_bytes(response.into_body(), 256).await.unwrap();
+        assert!(body_bytes.is_empty());
+    } else {
+        // Dev: Vite dev server returns index.html for any unknown path.
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+}
+
+/// FallbackStrategy::SinglePageApplication serves index.html (200) for unknown paths.
+///
+/// Both dev and prod return 200 with HTML content here — in prod ViteServe serves the embedded
+/// index.html; in dev the Vite dev server does it directly.
+async fn test_fallback_spa_found() {
+    let app = axum::Router::new().fallback_service(
+        ViteServe::new(Assets::boxed())
+            .with_fallback_strategy(FallbackStrategy::SinglePageApplication("index.html".into())),
+    );
+
+    let request = http::Request::builder()
+        .uri("/some/client/side/route")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    assert_eq!(
+        response
+            .headers()
+            .get("Content-Type")
+            .map(|h| h.to_str().unwrap()),
+        Some("text/html")
+    );
+
+    let body_bytes = body::to_bytes(response.into_body(), 4096).await.unwrap();
+    assert!(!body_bytes.is_empty());
+}
+
+/// FallbackStrategy::SinglePageApplication falls through to 404 when the named fallback file is
+/// not in the asset map.
+///
+/// In dev builds the Vite dev server answers before the missing-file check runs, so the response
+/// is 200 (index.html) rather than 404.
+async fn test_fallback_spa_missing_fallback_file() {
+    let app = axum::Router::new().fallback_service(
+        ViteServe::new(Assets::boxed()).with_fallback_strategy(
+            FallbackStrategy::SinglePageApplication("nonexistent.html".into()),
+        ),
+    );
+
+    let request = http::Request::builder()
+        .uri("/some/client/side/route")
+        .body(Body::empty())
+        .unwrap();
+
+    let response = app.oneshot(request).await.unwrap();
+
+    if cfg!(any(not(debug_assertions), feature = "debug-prod")) {
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let body_bytes = body::to_bytes(response.into_body(), 256).await.unwrap();
+        assert!(body_bytes.is_empty());
+    } else {
+        // Dev: Vite dev server returns index.html regardless; missing-file check never fires.
+        assert_eq!(response.status(), StatusCode::OK);
+    }
 }

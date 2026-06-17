@@ -49,6 +49,47 @@ The exposed `ViteServe` service can be used as a fallback service or mounted at 
    }
    ```
 
+## Single-Page Application (SPA) Routing
+
+In the default fallback strategy (`FallbackStrategy::NotFound`), requests for paths that don't match an embedded asset return `404` with an empty body ([caveat: ViteJS dev server responds 200 in all cases](#vitejs-invalid-path-response)). To let a client-side router (e.g. React Router, Vue Router) handle those paths instead, use `FallbackStrategy::SinglePageApplication`. The right setup depends on how you mount the `ViteServe` service.
+
+#### Option 1: Render SPA as a catch-all/fallback route
+
+The simplest setup: unmatched paths are already forwarded to `ViteServe` by Axum, so only the strategy needs to change.
+
+```diff
+use vite_rs_axum_0_8::{FallbackStrategy, ViteServe};
+
+axum::Router::new()
+    // ... your other routes ...
++    .fallback_service(
++        ViteServe::new(Assets::boxed())
++            .with_fallback_strategy(FallbackStrategy::SinglePageApplication("index.html".into()))
++    )
+```
+
+
+#### Option 2: Render SPA at a specific path
+
+It's required to use a two-route setup because `/` handles the root and `/{*path}` captures every deeper path.
+
+```diff
+use vite_rs_axum_0_8::{FallbackStrategy, ViteServe};
+
++let spa = ViteServe::new(Assets::boxed())
++    .with_fallback_strategy(FallbackStrategy::SinglePageApplication("index.html".into()));
+
+axum::Router::new()
++    .route_service("/", spa.clone())
++    .route_service("/{*path}", spa)
+```
+
+### Routing Response
+
+Any request that doesn't match an embedded asset is served `index.html` with a `200` response. If the named fallback file is not present in the asset map, the response falls back to `404`. 
+
+<a name="vitejs-invalid-path-response"></a>It should be noted that, in development, the ViteJS dev server serves the entrypoint (`index.html` by default) even at paths where resources don't exist.
+
 ## HTTP Caching Behaviour
 
 See [CacheStrategy rust docs](https://docs.rs/vite-rs-axum-0-8?search=CacheStrategy) for details on the caching strategies available. By default, release builds use the `Eager` caching strategy, while debug builds use `None`. You can override this by explicitly setting the cache strategy. Use them as follows:

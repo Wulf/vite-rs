@@ -2,9 +2,23 @@ use axum::body::Body;
 use axum::response::Response;
 use vite_rs_interface::GetFromVite;
 
+/// Determines how unmatched paths are handled.
+#[derive(Clone)]
+pub enum FallbackStrategy {
+    /// Return 404 with an empty body for any path that doesn't match an embedded asset. (default)
+    ///
+    /// Note: In dev builds, the Vite dev server serves 200 even for non-existent paths with the content of `index.html` (or whichever entrypoint is configured)
+    NotFound,
+    /// Serve the given embedded file for any path that doesn't match an embedded asset, so client-side routers can handle the request.
+    ///
+    /// If the named file is not present in the embedded asset map, falls back to the NotFound strategy behaviour.
+    SinglePageApplication(String),
+}
+
 pub struct ViteServe {
     pub cache_strategy: CacheStrategy,
     pub assets: Box<dyn GetFromVite>,
+    pub fallback_strategy: FallbackStrategy,
 }
 
 impl Clone for ViteServe {
@@ -12,6 +26,7 @@ impl Clone for ViteServe {
         Self {
             cache_strategy: self.cache_strategy.clone(),
             assets: self.assets.clone_box(),
+            fallback_strategy: self.fallback_strategy.clone(),
         }
     }
 }
@@ -43,11 +58,17 @@ impl ViteServe {
             #[cfg(any(not(debug_assertions), feature = "debug-prod"))]
             cache_strategy: CacheStrategy::Eager,
             assets,
+            fallback_strategy: FallbackStrategy::NotFound,
         }
     }
 
     pub fn with_cache_strategy(mut self, cache_strategy: CacheStrategy) -> Self {
         self.cache_strategy = cache_strategy;
+        self
+    }
+
+    pub fn with_fallback_strategy(mut self, strategy: FallbackStrategy) -> Self {
+        self.fallback_strategy = strategy;
         self
     }
 
@@ -132,7 +153,20 @@ impl ViteServe {
                 }
             }
             None => {
-                // Return 404 Not Found with an empty body
+                match self.fallback_strategy {
+                    FallbackStrategy::SinglePageApplication(ref fallback_file) => {
+                        if let Some(index) = self.assets.get(fallback_file) {
+                            return Response::builder()
+                                .status(200)
+                                .header("Content-Type", index.content_type)
+                                .header("Content-Length", index.content_length)
+                                .body(Body::from(index.bytes))
+                                .unwrap();
+                        }
+                    }
+                    FallbackStrategy::NotFound => { /* logic below returns 404 as required */ }
+                }
+
                 #[cfg(all(debug_assertions, not(feature = "debug-prod")))]
                 return Response::builder()
                     .status(404)
