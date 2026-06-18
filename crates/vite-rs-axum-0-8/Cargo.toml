@@ -14,14 +14,14 @@ homepage.workspace = true
 [dependencies]
 vite-rs-interface = { path = "../vite-rs-interface", features = [
     "content-hash",
-], version = "0.2.1" }
+], version = "0.3.0" }
 axum = { version = "0.8", default-features = false }
 tower = "0.5"
 
 [dev-dependencies]
 nix = { version = "0.29.0", features = ["signal"] } # for tests
 reqwest = { version = "0.12.7", features = ["blocking"] } # for tests
-vite-rs = { path = "../vite-rs", version = "0.2.1", default-features = false, features = [
+vite-rs = { path = "../vite-rs", version = "0.3.0", default-features = false, features = [
     "ctrlc",
     "content-hash",
 ] } # for tests
